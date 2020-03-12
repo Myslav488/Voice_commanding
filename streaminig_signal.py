@@ -29,7 +29,7 @@ def animate(i):
     audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
     audio = audio[:Fs]
 
-    # take evry 6 sample to reduce sampling rate
+    # take every 6 sample to reduce sampling rate
     audio1 = audio[0::6]
     Fs /= 6
 
