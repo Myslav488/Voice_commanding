@@ -10,7 +10,7 @@ if __name__ == '__main__':
     Fs, audio = wavfile.read('probka.wav', mmap=True)
     start_time = time.time()
 
-    audio = audio[30000:38000]
+    # audio = audio[30000:38000]
 
     # transformata sygnalu
     audiofft = fft(audio)
