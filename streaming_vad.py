@@ -53,7 +53,7 @@ if __name__ == '__main__':
         audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 3
+        prog = 4
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -84,8 +84,8 @@ if __name__ == '__main__':
                 znak += 1
             # if all(wektor_zazn[cnt:cnt+100*8]) != 0:
             elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt]:
-                if znak < 8 * 100 and not any(wektor_zazn[cnt + 1:cnt + 8 * 200 + 1]) and not any(
-                        wektor_zazn[cnt - znak - 8 * 200:cnt - znak - 1]):
+                if znak < 8 * 100 and not any(wektor_zazn[cnt + 1:cnt + 8 * 400 + 1]) and not any(
+                        wektor_zazn[cnt - znak - 8 * 400:cnt - znak - 1]):
                     wektor_zazn[cnt - znak:cnt] = 0
                 znak = 0
 
@@ -94,18 +94,18 @@ if __name__ == '__main__':
         while cnt < len(wektor_zazn):
             if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and cnt > 200 * 8:
                 # print("\nOperacja 1")
-                wektor_zazn[cnt - 200 * 8:cnt] = stan_wysoki
+                wektor_zazn[cnt - 300 * 8:cnt] = stan_wysoki
             elif stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1]:
                 # print("\nOperacja 2")
                 wektor_zazn[0:cnt] = stan_wysoki
             elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt] and len(audio2) - cnt > 200 * 8:
                 # print("\nOperacja 3")
-                wektor_zazn[cnt:cnt + 200 * 8] = stan_wysoki
-                cnt += 200 * 8 + 2
+                wektor_zazn[cnt:cnt + 300 * 8] = stan_wysoki
+                cnt += 300 * 8 + 2
             elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt]:
                 # print("\nOperacja 4")
                 wektor_zazn[cnt:len(audio2)] = stan_wysoki
-                cnt += 200 * 8
+                cnt += 300 * 8
             cnt += 1
 
         # sklejanie sygnalow

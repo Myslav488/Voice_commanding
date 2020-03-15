@@ -40,6 +40,16 @@ def animate(i):
     audiofft = fft(audio2)
     audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
+    ##Filtracja dzwieku wentylatora
+    # zapisywanie widma sygnalu
+    # if os.path.exists("widmo.csv"):
+    #    os.remove("widmo.csv")
+    # audiofft.tofile("widmo.csv", sep=';', format='%10.5f')
+
+    # wczytywanie widma sygnalu
+    # audiox = np.fromfile("widmo.csv", sep=';')
+    # print(np.info(audiox))
+    # audiofft -= audiox
     # freq axis
     x_values = np.arange(0, len(audiofft), 1)
     plt.cla()

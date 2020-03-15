@@ -4,7 +4,7 @@ import scipy.io.wavfile as wavfile
 import subprocess
 import os
 from matplotlib.animation import FuncAnimation
-from scipy.fftpack import fft
+# from scipy.fftpack import fft
 import scipy.signal
 # plt.style.use('fivethirtyeight')
 wholerun = [0] * 40000
