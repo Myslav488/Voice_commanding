@@ -15,7 +15,12 @@ zazn_przd = 0
 zazn_tyl = 0
 rms1 = 10**8
 
+
 if __name__ == '__main__':
+
+    if os.path.exists('input_read1.wav'):
+        os.remove('input_read1.wav')
+
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
@@ -25,7 +30,11 @@ if __name__ == '__main__':
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
         # wczytywanie pliku z nagraniem
-        Fs, audio = wavfile.read('input_read1.wav', mmap=False)
+        if os.path.exists('input_read1.wav'):
+            Fs, audio = wavfile.read('input_read1.wav', mmap=False)
+        else:
+            Fs = 48000
+            audio = [0]*Fs
 
         # filtr antyaliasingowy
         filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
@@ -48,14 +57,14 @@ if __name__ == '__main__':
         # print("Wartosc rms do normalizacji: ", rms1)
         audio1 = audio1 / rms1
         # filtr preemfazy
-        audio2 = np.append(audio1[0], audio1[1:] - 0.95 * audio1[:-1])
+        audio2 = np.append(audio1[160], audio1[161:] - 0.95 * audio1[160:-1])
 
         # transformata sygnalu
-        audiofft = fft(audio2)
-        audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
+        # audiofft = fft(audio2)
+        # audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 8
+        prog = 6
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -93,24 +102,21 @@ if __name__ == '__main__':
                     wektor_zazn[cnt - znak:cnt] = 0
                 znak = 0
 
+        '''
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
         global zazn_przd
         global zazn_tyl
         cnt = 0
         while cnt < len(wektor_zazn):
             if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and cnt > 200 * 8:
-                # print("\nOperacja 1")
                 wektor_zazn[cnt - 300 * 8:cnt] = stan_wysoki
             elif stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1]:
-                # print("\nOperacja 2")
                 wektor_zazn[0:cnt] = stan_wysoki
                 zazn_tyl = 300*8 - cnt
             elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt] and len(audio2) - cnt > 200 * 8:
-                # print("\nOperacja 3")
                 wektor_zazn[cnt:cnt + 300 * 8] = stan_wysoki
                 cnt += 300 * 8 + 2
             elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt]:
-                # print("\nOperacja 4")
                 wektor_zazn[cnt:len(audio2)] = stan_wysoki
                 cnt += 300 * 8
                 zazn_przd = len(audio2) - cnt + 300*8
@@ -120,21 +126,37 @@ if __name__ == '__main__':
         if 0 != zazn_przd:
             wektor_zazn[:zazn_przd] = stan_wysoki
             zazn_przd = 0
+        '''
 
         # sklejanie sygnalow
         global wholerun1
         wholerun1 = wholerun1[8000:]
         wholerun1 = np.append(wholerun1, audio2)
 
-        zzz = 0
-        for cnt in range(0, len(wholerun1)):
-            if 0 == wholerun1[cnt]:
-                zzz += 1
-        print("HAHAHAHAHAHHAHAHAHAHAHHAHAHAH ", zzz)
-
         global wholerun2
         wholerun2 = wholerun2[8000:]
         wholerun2 = np.append(wholerun2, wektor_zazn)
+
+        cnt = 0
+        while cnt < len(wholerun2):
+            if stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1] and cnt > 200 * 8:
+                # print("\nOperacja 1")
+                wholerun2[cnt - 300 * 8:cnt] = stan_wysoki
+            elif stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1]:
+                # print("\nOperacja 2")
+                wholerun2[0:cnt] = stan_wysoki
+                zazn_tyl = 300 * 8 - cnt
+            elif stan_wysoki == wholerun2[cnt - 1] and stan_wysoki != wholerun2[cnt] and len(
+                    wholerun1) - cnt > 200 * 8:
+                # print("\nOperacja 3")
+                wholerun2[cnt:cnt + 300 * 8] = stan_wysoki
+                cnt += 300 * 8 + 2
+            elif stan_wysoki == wholerun2[cnt - 1] and stan_wysoki != wholerun2[cnt]:
+                # print("\nOperacja 4")
+                wholerun2[cnt:len(wholerun1)] = stan_wysoki
+                cnt += 300 * 8
+                zazn_przd = len(wholerun1) - cnt + 300 * 8
+            cnt += 1
 
         # os czasu
         x_values = np.arange(0, len(wholerun1), 1) / float(Fs)
@@ -143,7 +165,7 @@ if __name__ == '__main__':
 
         plt.cla()
         plt.plot(x_values, wholerun1, x_values, wholerun2, label='Signal')
-        plt.legend(loc='upper left')
+        plt.legend(loc='upper right')
         plt.tight_layout()
 
     # aktywacja animacji wyswietlenia sygnalu
