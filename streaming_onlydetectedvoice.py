@@ -138,6 +138,13 @@ if __name__ == '__main__':
                 cnt += 200 * 8 + 2
             cnt += 1
 
+        # ekstrakcja wulrytego sygnalu mowy
+        cnt = 0
+        while cnt < 8000:
+            if stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1]:
+                pass
+        #to be continued
+
         # os czasu
         x_values = np.arange(0, len(wholerun1), 1) / float(Fs)
         # przeskalowanie osi do sekund
