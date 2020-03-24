@@ -2,6 +2,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wavfile
 from scipy.fftpack import fft
+from mfcc_lib import mfcc, logfbank
 import scipy.signal
 import numpy as np
 import subprocess
@@ -11,7 +12,7 @@ import os
 wholerun1 = [0] * 24000
 wholerun2 = [0] * 24000
 wholerun3 = [0] * 24000
-
+wyjscie = np.zeros((100,1))
 # globalna wartosc rms do normalizacji
 zazn_przd = 0
 zazn_tyl = 0
@@ -138,23 +139,45 @@ if __name__ == '__main__':
                 cnt += 200 * 8 + 2
             cnt += 1
 
-        # ekstrakcja wulrytego sygnalu mowy
-        cnt = 0
-        while cnt < 8000:
-            if stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1]:
-                pass
-        #to be continued
+        # ekstrakcja wykrytego sygnalu mowy
+        wyniki = np.zeros((20, 2))
+        cnt1 = 0
+        cnt2 = 0
+        while cnt1 < (len(wholerun1) - 8000):
+            if stan_wysoki == wholerun2[cnt1] and stan_wysoki != wholerun2[cnt1 - 1] and cnt1 < 8000:
+                wyniki[cnt2, 0] = cnt1
+                wyniki[cnt2, 1] += 1
+                cnt1 += 1
+            elif stan_wysoki == wholerun2[cnt1] and stan_wysoki == wholerun2[cnt1 - 1] and 4000 < cnt1 < 16000:
+                wyniki[cnt2, 1] += 1
+                cnt1 += 1
+            elif stan_wysoki != wholerun2[cnt1] and stan_wysoki == wholerun2[cnt1 - 1]:
+                cnt2 += 1
+                cnt1 += 1
+            else:
+                cnt1 += 1
+
+        z = np.argmax(wyniki[:,1])
+        global wyjscie
+        if (wyniki[z,1]>4000):
+            wyjscie = wholerun1[int(wyniki[z,0]):int(wyniki[z,0])+int(wyniki[z,1])]
+
+        mfcc_feat = mfcc((wyjscie), Fs)
+        # fbank_feat = logfbank(audio1,sampling_freq)
+        mfcc_feat = mfcc_feat.T
 
         # os czasu
-        x_values = np.arange(0, len(wholerun1), 1) / float(Fs)
+        #x_values = np.arange(0, len(wyjscie), 1) / float(Fs)
         # przeskalowanie osi do sekund
-        x_values *= 1000
+        # x_values *= 1000
 
         # rysowanie wykresow
         plt.cla()
-        plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, label='Signal')
-        plt.legend(loc='upper right')
-        plt.tight_layout()
+        plt.imshow(mfcc_feat)
+        # plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, label='Signal')
+        # plt.plot(x_values, wyjscie, label='Signal')
+        # plt.legend(loc='upper right')
+        # plt.tight_layout()
 
     # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
