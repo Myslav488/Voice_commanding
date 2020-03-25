@@ -15,7 +15,6 @@ def build_arg_parser():
                         help="Input folder with the audio files in subfolders")
     return parser
 
-
 # define class
 class HMMtrainer(object):
     def __init__(self, model_name='GaussianHMM', n_components=4, cov_type='diag', n_iter=1000):

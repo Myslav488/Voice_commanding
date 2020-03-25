@@ -3,9 +3,12 @@ import matplotlib.pyplot as plt
 import scipy.io.wavfile as wavfile
 from scipy.fftpack import fft
 from mfcc_lib import mfcc, logfbank
+from hmmlearn import hmm
 import scipy.signal
 import numpy as np
 import subprocess
+import warnings
+import time
 import os
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
@@ -19,10 +22,75 @@ zazn_tyl = 0
 rms1 = 10**8
 
 
+# definiowanie klasy HMM
+class HMMtrainer(object):
+    def __init__(self, model_name='GaussianHMM', n_components=4, cov_type='diag', n_iter=1000):
+        self.model_name = model_name
+        self.n_components = n_components
+        self.cov_type = cov_type
+        self.n_iter = n_iter
+        self.models = []
+
+        if self.model_name == 'GaussianHMM':
+            self.model = hmm.GaussianHMM(n_components=self.n_components, covariance_type=self.cov_type,
+                                         n_iter=self.n_iter)
+
+        else:
+            raise TypeError('Invalid model type')
+
+    def train(self, X):
+        np.seterr(all='ignore')
+        self.models.append(self.model.fit(X))
+
+    def get_score(self, input_data):
+        return self.model.score(input_data)
+
 if __name__ == '__main__':
 
     if os.path.exists('input_read1.wav'):
         os.remove('input_read1.wav')
+
+    start_time = time.time()
+    input_folder = 'Baza/'
+
+    hmm_models = []
+
+    for dirname in os.listdir(input_folder):
+        subfolder = os.path.join(input_folder, dirname)
+
+        if not os.path.isdir(subfolder):
+            continue
+
+        # extracting labels
+        label = subfolder[subfolder.rfind('/') + 1:]
+
+        # initialize vars
+        X = np.array([])
+        y_words = []
+        warnings.filterwarnings("ignore")
+
+        # iterating through the audio files,
+        for filename in [x for x in os.listdir(subfolder) if x.endswith('.wav')][:-1]:
+            # read the input file
+            filepath = os.path.join(subfolder, filename)
+            Fs, audio = wavfile.read(filepath)
+
+            # extract mfcc features
+            mfcc_feats = mfcc(audio, Fs)
+
+            if len(X) == 0:
+                X = mfcc_feats
+            else:
+                X = np.append(X, mfcc_feats, axis=0)
+
+            # Append the label
+            y_words.append(label)
+
+        # train the hmm model
+        hmm_trainer = HMMtrainer()
+        hmm_trainer.train(X)
+        hmm_models.append((hmm_trainer, label))
+        hmm_trainer = None
 
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
@@ -61,10 +129,6 @@ if __name__ == '__main__':
         audio1 = audio1 / rms1
         # filtr preemfazy
         audio2 = np.append(audio1[160], audio1[161:] - 0.95 * audio1[160:-1])
-
-        # transformata sygnalu
-        # audiofft = fft(audio2)
-        # audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
         prog = 6
@@ -163,21 +227,28 @@ if __name__ == '__main__':
             wyjscie = wholerun1[int(wyniki[z,0]):int(wyniki[z,0])+int(wyniki[z,1])]
 
         mfcc_feat = mfcc((wyjscie), Fs)
-        # fbank_feat = logfbank(audio1,sampling_freq)
-        mfcc_feat = mfcc_feat.T
-
-        # os czasu
-        #x_values = np.arange(0, len(wyjscie), 1) / float(Fs)
-        # przeskalowanie osi do sekund
-        # x_values *= 1000
+        # mfcc_feat = mfcc_feat.T
 
         # rysowanie wykresow
         plt.cla()
-        plt.imshow(mfcc_feat)
-        # plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, label='Signal')
-        # plt.plot(x_values, wyjscie, label='Signal')
-        # plt.legend(loc='upper right')
-        # plt.tight_layout()
+        plt.imshow(mfcc_feat.T)
+
+        # define variables
+        max_score = [float("-inf")]
+        output_label = [float("-inf")]
+
+        # iterate through all hmm models and pick highest score
+        for item in hmm_models:
+            hmm_model, label = item
+            score = hmm_model.get_score(mfcc_feat)
+            if score > max_score:
+                max_score = score
+                output_label = label
+
+        print("Predicted: ", output_label)
+        warnings.filterwarnings("ignore")
+
+        print("\nUplyniety czas: %s sek" % (time.time() - start_time))
 
     # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
