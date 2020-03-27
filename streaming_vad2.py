@@ -15,7 +15,7 @@ wholerun3 = [0] * 24000
 # globalna wartosc rms do normalizacji
 zazn_przd = 0
 zazn_tyl = 0
-rms1 = 10**8
+rms1 = 10**3
 
 
 if __name__ == '__main__':
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
-        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
+        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S16_LE', '-t', 'wav',
                      '-V', 'mono', '-v', 'input_read1.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         audio = audio[:Fs]
 
         # flitr przeciwkoprzydzwiekowi
-        filtr = scipy.signal.firwin(1023, 160, fs=Fs, pass_zero=False)
+        filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
         audio = audio[:Fs]
 
@@ -59,14 +59,14 @@ if __name__ == '__main__':
         # print("Wartosc rms do normalizacji: ", rms1)
         audio1 = audio1 / rms1
         # filtr preemfazy
-        audio2 = np.append(audio1[160], audio1[161:] - 0.95 * audio1[160:-1])
+        audio2 = np.append(audio1[160], audio1[161:] - 0.85 * audio1[160:-1])
 
         # transformata sygnalu
         # audiofft = fft(audio2)
         # audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 6
+        prog = 8
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8

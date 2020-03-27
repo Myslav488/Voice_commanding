@@ -29,7 +29,7 @@ def animate(i):
     audio = audio[:Fs]
 
     # flitr przeciwkoprzydzwiekowi
-    filtr = scipy.signal.firwin(1023, 160, fs=Fs, pass_zero=False)
+    filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
     audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
     audio = audio[:Fs]
 
@@ -41,11 +41,11 @@ def animate(i):
     # normalization
     rms = np.sqrt(np.mean(audio1 ** 2))
     audio1 = audio1 / rms
-    audio2 = np.append(audio1[0], audio1[1:] - 0.95 * audio1[:-1])
+    audio2 = np.append(audio1[0], audio1[1:] - 0.85 * audio1[:-1])
 
     audiofft = fft(audio2)
     audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
-
+    '''
     ##Filtracja dzwieku wentylatora
     # zapisywanie widma sygnalu
     # if os.path.exists("widmo.csv"):
@@ -55,19 +55,23 @@ def animate(i):
     # wczytywanie widma sygnalu
     audiox = np.fromfile("widmo.csv", sep=';')
     # print(np.info(audiox))
-    '''
-    for cnt in range(270,290):
-        if np.argmax(audiox[270:290]) == np.argmax(audiofft[270:290]):
+
+    for cnt in range(260,300):
+        print(np.argmax(audiox[260:300]), np.argmax(audiofft[260:300]))
+        if np.argmax(audiox[260:300]) == np.argmax(audiofft[260:300]):
             audiofft -= audiox
+            print("Tniemy")
             break
+
         else:
             audiofft = np.append(audiofft[1:], 0)
+            print("NIE Tniemy")
             continue
     '''
     # freq axis
-    x_values = np.arange(0, len(audiox), 1)
+    x_values = np.arange(0, len(audiofft), 1)
     plt.cla()
-    plt.plot(x_values, audiox, label='Signal')
+    plt.plot(x_values, audiofft, label='Signal')
     plt.legend(loc='upper left')
     plt.tight_layout()
 

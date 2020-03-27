@@ -43,7 +43,7 @@ if __name__ == '__main__':
     start_time = time.time()
     # args = build_arg_parser().parse_args()
     # input_folder = args.input_folder
-    input_folder = 'Baza/'
+    input_folder = 'Baza2/'
 
     hmm_models = []
 

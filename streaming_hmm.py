@@ -16,6 +16,7 @@ wholerun1 = [0] * 24000
 wholerun2 = [0] * 24000
 wholerun3 = [0] * 24000
 wyjscie = np.zeros((1,100))
+g_time = time.time()
 # globalna wartosc rms do normalizacji
 zazn_przd = 0
 zazn_tyl = 0
@@ -51,7 +52,7 @@ if __name__ == '__main__':
         os.remove('input_read1.wav')
 
     start_time = time.time()
-    input_folder = 'Baza/'
+    input_folder = 'Baza2/'
 
     hmm_models = []
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
         warnings.filterwarnings("ignore")
 
         # iterating through the audio files,
-        for filename in [x for x in os.listdir(subfolder) if x.endswith('.wav')][:-1]:
+        for filename in [x for x in os.listdir(subfolder) if x.endswith('.wav')]:
             # read the input file
             filepath = os.path.join(subfolder, filename)
             Fs, audio = wavfile.read(filepath)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
         audio = audio[:Fs]
 
         # flitr przeciwkoprzydzwiekowi
-        filtr = scipy.signal.firwin(1023, 160, fs=Fs, pass_zero=False)
+        filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
         audio = audio[:Fs]
 
@@ -128,7 +129,7 @@ if __name__ == '__main__':
         # print("Wartosc rms do normalizacji: ", rms1)
         audio1 = audio1 / rms1
         # filtr preemfazy
-        audio2 = np.append(audio1[160], audio1[161:] - 0.95 * audio1[160:-1])
+        audio2 = np.append(audio1[160], audio1[161:] - 0.85 * audio1[160:-1])
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
         prog = 6
@@ -244,13 +245,15 @@ if __name__ == '__main__':
             if score > max_score:
                 max_score = score
                 output_label = label
-
+            print(label, score)
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
+        global g_time
 
-        print("\nUplyniety czas: %s sek" % (time.time() - start_time))
+        print("\nUplyniety czas: %s sek" % (time.time() - g_time))
+        g_time = time.time()
 
-    # aktywacja animacji wyswietlenia sygnalu
+        # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
     plt.tight_layout()
     plt.show()
