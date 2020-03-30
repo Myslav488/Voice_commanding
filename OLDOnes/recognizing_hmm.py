@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 from scipy.io import wavfile
 from hmmlearn import hmm
-import mfcc_lib as fts
+import lib_mfcc as fts
 import time
 
 

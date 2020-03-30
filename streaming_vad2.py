@@ -5,6 +5,7 @@ from scipy.fftpack import fft
 import scipy.signal
 import numpy as np
 import subprocess
+import lib_filter
 import os
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
@@ -38,15 +39,17 @@ if __name__ == '__main__':
             Fs = 48000
             audio = [0]*Fs
 
+        filtrlen = 1024
         # filtr antyaliasingowy
-        filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
+        filtr = scipy.signal.firwin2(filtrlen, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        audio = audio[filtrlen//2-1:(-filtrlen//2)+1]
 
         # flitr przeciwkoprzydzwiekowi
-        filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
+        filtr = scipy.signal.firwin(filtrlen-1, 360, fs=Fs, pass_zero=False)
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        audio = audio[filtrlen//2:(-filtrlen//2)+1]
+        print(len(audio))
 
         # decymacja
         audio1 = audio[0::6]
@@ -59,7 +62,7 @@ if __name__ == '__main__':
         # print("Wartosc rms do normalizacji: ", rms1)
         audio1 = audio1 / rms1
         # filtr preemfazy
-        audio2 = np.append(audio1[160], audio1[161:] - 0.85 * audio1[160:-1])
+        audio2 = np.append(audio1[0], audio1[1:] - 0.85 * audio1[0:-1])
 
         # transformata sygnalu
         # audiofft = fft(audio2)

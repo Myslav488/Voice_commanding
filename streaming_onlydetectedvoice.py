@@ -2,7 +2,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wavfile
 from scipy.fftpack import fft
-from mfcc_lib import mfcc, logfbank
+from lib_mfcc import mfcc, logfbank
 import scipy.signal
 import numpy as np
 import subprocess

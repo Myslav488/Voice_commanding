@@ -2,7 +2,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wavfile
 from scipy.fftpack import fft
-from mfcc_lib import mfcc, logfbank
+from lib_mfcc import mfcc, logfbank
 from hmmlearn import hmm
 import scipy.signal
 import numpy as np
@@ -76,6 +76,9 @@ if __name__ == '__main__':
             filepath = os.path.join(subfolder, filename)
             Fs, audio = wavfile.read(filepath)
 
+            # audiocc = audio / np.sqrt(np.mean(audio ** 2))
+            # audiocc = (audio - min(audio))/(max(audio) - min(audio))
+
             # extract mfcc features
             mfcc_feats = mfcc(audio, Fs)
 
@@ -111,12 +114,13 @@ if __name__ == '__main__':
         # filtr antyaliasingowy
         filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        print(len(audio))
+        audio = audio[len(audio)-Fs:]
 
         # flitr przeciwkoprzydzwiekowi
         filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
         audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        audio = audio[len(audio)-Fs:]
 
         # decymacja
         audio1 = audio[0::6]
@@ -245,7 +249,7 @@ if __name__ == '__main__':
             if score > max_score:
                 max_score = score
                 output_label = label
-            print(label, score)
+            # print(label, score)
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
         global g_time

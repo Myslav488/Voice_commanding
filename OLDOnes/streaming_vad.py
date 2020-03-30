@@ -28,7 +28,7 @@ if __name__ == '__main__':
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
         # wczytywanie pliku z nagraniem
-        Fs, audio0 = wavfile.read('input_read1.wav', mmap=True)
+        Fs, audio0 = wavfile.read('../input_read1.wav', mmap=True)
         # filtr antyaliasingowy
         filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
         audio0 = scipy.signal.convolve(audio0, filtr, mode='full', method='auto')

@@ -17,7 +17,7 @@ def animate(i):
     print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
     # read the input file
-    Fs, audio = wavfile.read('input_read1.wav', mmap=True)
+    Fs, audio = wavfile.read('../input_read1.wav', mmap=True)
 
     # antyaliasing filter
     filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
