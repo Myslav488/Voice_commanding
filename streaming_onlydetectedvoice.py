@@ -1,9 +1,9 @@
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wavfile
-from scipy.fftpack import fft
 from lib_mfcc import mfcc, logfbank
-import scipy.signal
+import lib_filter as filt
+import lib_vad as vad
 import numpy as np
 import subprocess
 import os
@@ -14,8 +14,6 @@ wholerun2 = [0] * 24000
 wholerun3 = [0] * 24000
 wyjscie = np.zeros((1,100))
 # globalna wartosc rms do normalizacji
-zazn_przd = 0
-zazn_tyl = 0
 rms1 = 10**8
 
 
@@ -40,144 +38,74 @@ if __name__ == '__main__':
             audio = [0]*Fs
 
         # filtr antyaliasingowy
-        filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
-        audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        audio = filt.filtr_dol(audio, Fs, 8000, 1024)
 
         # flitr przeciwkoprzydzwiekowi
-        filtr = scipy.signal.firwin(1023, 160, fs=Fs, pass_zero=False)
-        audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-        audio = audio[:Fs]
+        audio = filt.filtr_gor(audio, Fs, 360, 1024)
 
         # decymacja
-        audio1 = audio[0::6]
-        Fs /= 6
+        Fs, audio = filt.decymacja(audio, Fs, 6)
 
          # normalizacja do rms sygnalu
-        rms = np.sqrt(np.mean(audio1 ** 2))
+        rms = np.sqrt(np.mean(audio ** 2))
         global rms1
         rms1 = 0.8 * rms1 + 0.2 * rms
         # print("Wartosc rms do normalizacji: ", rms1)
-        audio1 = audio1 / rms1
+        audio = audio / rms1
         # filtr preemfazy
-        audio2 = np.append(audio1[160], audio1[161:] - 0.95 * audio1[160:-1])
-
-        # transformata sygnalu
-        # audiofft = fft(audio2)
-        # audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
+        audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
         prog = 6
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
-        # wektor mocy sygnalu
-        pow_vec = np.ones(len(audio2))
 
+        # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
-        for cnt in range(0, len(audio2), winlen):
-            tempsamp = audio2[cnt:cnt + winlen]
-            pow_vec[cnt:cnt + winlen] *= np.mean(np.abs(fft(tempsamp)))
+        pow_vec = vad.vec_pow(audio, winlen)
 
         # wektor wyroznienia sygnalu z informacja glosowa
-        wektor_zazn = np.zeros(len(audio2))
         stan_wysoki = 2
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
-        for cnt in range(0, len(wektor_zazn)):
-            if pow_vec[cnt] > prog:
-                wektor_zazn[cnt] = stan_wysoki
+        wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
 
-        # licznik aktywnosci sygnalu
-        znak = 0
         # petla wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
-        for cnt in range(0, len(wektor_zazn)):
-            if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1]:
-                znak += 1
-            elif stan_wysoki == wektor_zazn[cnt] and znak > 0:
-                znak += 1
-            # if all(wektor_zazn[cnt:cnt+100*8]) != 0:
-            elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt]:
-                if znak < 8 * 100 and not any(wektor_zazn[cnt + 1:cnt + 8 * 400 + 1]) and not any(
-                        wektor_zazn[cnt - znak - 8 * 400:cnt - znak - 1]):
-                    wektor_zazn[cnt - znak:cnt] = 0
-                znak = 0
+        wektor_zazn = vad.usun_krotkie(wektor_zazn, stan_wysoki, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi
         global wholerun1
-        wholerun1 = wholerun1[len(audio2):]
-        wholerun1 = np.append(wholerun1, audio2)
+        wholerun1 = wholerun1[len(audio):]
+        wholerun1 = np.append(wholerun1, audio)
 
         global wholerun2
-        wholerun2 = wholerun2[len(audio2):]
+        wholerun2 = wholerun2[len(audio):]
         wholerun2 = np.append(wholerun2, wektor_zazn)
 
         global wholerun3
-        wholerun3 = wholerun3[len(audio2):]
+        wholerun3 = wholerun3[len(audio):]
         wholerun3 = np.append(wholerun3, pow_vec)
 
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        cnt = 8000
-        while cnt < len(wholerun2) - 8000:
-            if stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1] and any(
-                    stan_wysoki / 2 < wholerun3[cnt - 300 * 8:cnt]):
-                wholerun2[cnt - 300 * 8:cnt] = stan_wysoki
-            elif stan_wysoki == wholerun2[cnt - 1] and stan_wysoki != wholerun2[cnt] and any(
-                    stan_wysoki / 2 < wholerun3[cnt:cnt + 300 * 8]):
-                wholerun2[cnt:cnt + 300 * 8] = stan_wysoki
-                cnt += 300 * 8
-            cnt += 1
+        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, 8000, len(wholerun2)-8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
-        cnt = 8000
-        while cnt < len(wholerun2)-8000:
-            if stan_wysoki == wholerun2[cnt] and stan_wysoki != wholerun2[cnt - 1] and cnt > 200 * 8:
-                wholerun2[cnt - 200 * 8:cnt] = stan_wysoki
-            elif stan_wysoki == wholerun2[cnt - 1] and stan_wysoki != wholerun2[cnt] and len(
-                    wholerun1) - cnt > 300 * 8:
-                wholerun2[cnt:cnt + 200 * 8] = stan_wysoki
-                cnt += 200 * 8 + 2
-            cnt += 1
+        wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000,  len(wholerun2)-8000)
 
         # ekstrakcja wykrytego sygnalu mowy
-        wyniki = np.zeros((20, 2))
-        cnt1 = 0
-        cnt2 = 0
-        while cnt1 < (len(wholerun1) - 8000):
-            if stan_wysoki == wholerun2[cnt1] and stan_wysoki != wholerun2[cnt1 - 1] and cnt1 < 8000:
-                wyniki[cnt2, 0] = cnt1
-                wyniki[cnt2, 1] += 1
-                cnt1 += 1
-            elif stan_wysoki == wholerun2[cnt1] and stan_wysoki == wholerun2[cnt1 - 1] and 4000 < cnt1 < 16000:
-                wyniki[cnt2, 1] += 1
-                cnt1 += 1
-            elif stan_wysoki != wholerun2[cnt1] and stan_wysoki == wholerun2[cnt1 - 1]:
-                cnt2 += 1
-                cnt1 += 1
-            else:
-                cnt1 += 1
-
-        z = np.argmax(wyniki[:,1])
         global wyjscie
-        if (wyniki[z,1]>4000):
-            wyjscie = wholerun1[int(wyniki[z,0]):int(wyniki[z,0])+int(wyniki[z,1])]
+        temp_wyj = vad.ekstrakcja(wholerun1, wholerun2, stan_wysoki)
+        if (len(temp_wyj)>4000):
+            wyjscie = temp_wyj
 
         mfcc_feat = mfcc((wyjscie), Fs)
         # fbank_feat = logfbank(audio1,sampling_freq)
         mfcc_feat = mfcc_feat.T
 
-        # os czasu
-        #x_values = np.arange(0, len(wyjscie), 1) / float(Fs)
-        # przeskalowanie osi do sekund
-        # x_values *= 1000
-
         # rysowanie wykresow
         plt.cla()
         plt.imshow(mfcc_feat)
-        # plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, label='Signal')
-        # plt.plot(x_values, wyjscie, label='Signal')
-        # plt.legend(loc='upper right')
-        # plt.tight_layout()
 
     # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)

@@ -1,11 +1,11 @@
-import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import scipy.io.wavfile as wavfile
+import matplotlib.pyplot as plt
+from scipy.fftpack import fft
+import lib_filter as filt
+import numpy as np
 import subprocess
 import os
-from matplotlib.animation import FuncAnimation
-from scipy.fftpack import fft
-import scipy.signal
 
 if os.path.exists('input_read1.wav'):
     os.remove('input_read1.wav')
@@ -23,27 +23,23 @@ def animate(i):
         Fs = 48000
         audio = [0] * Fs
 
-    # antyaliasing filter
-    filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
-    audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-    audio = audio[:Fs]
+    # filtr antyaliasingowy
+    audio = filt.filtr_dol(audio, Fs, 8000, 1024)
 
     # flitr przeciwkoprzydzwiekowi
-    filtr = scipy.signal.firwin(1023, 360, fs=Fs, pass_zero=False)
-    audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-    audio = audio[:Fs]
+    audio = filt.filtr_gor(audio, Fs, 360, 1024)
 
-    # print(len(audio))
-    # take evry 6 sample to reduce sampling rate
-    audio1 = audio[0::6]
-    Fs /= 6
+    # decymacja
+    Fs, audio = filt.decymacja(audio, Fs, 6)
 
     # normalization
-    rms = np.sqrt(np.mean(audio1 ** 2))
-    audio1 = audio1 / rms
-    audio2 = np.append(audio1[0], audio1[1:] - 0.85 * audio1[:-1])
+    rms = np.sqrt(np.mean(audio ** 2))
+    audio1 = audio / rms
 
-    audiofft = fft(audio2)
+    # filtr preemfazy
+    audio = filt.preemfaza(audio, 0.95)
+
+    audiofft = fft(audio)
     audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
     '''
     ##Filtracja dzwieku wentylatora

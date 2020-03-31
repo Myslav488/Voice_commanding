@@ -15,7 +15,7 @@ def filtr_gor(audio, Fs, cutoff, filtrlen=1024):
     audio = audio[filtrlen//2-1:(-filtrlen//2)+1]
     return audio
 
-def decimation(audio, Fs, X=1):
+def decymacja(audio, Fs, X=1):
     audio = audio[::X]
     Fs /= X
     return Fs, audio

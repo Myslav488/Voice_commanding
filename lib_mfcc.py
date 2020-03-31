@@ -1,3 +1,7 @@
+#A Library of functions to get signals features for voice recogntions
+#made by James Lyons(proper license info at the bottom of the code)
+#with my extra modifications
+
 from scipy.fftpack import dct
 import decimal
 import numpy
@@ -13,7 +17,6 @@ def calculate_nfft(samplerate, winlen):
         nfft *= 2
     return nfft
 
-
 # Compute MFCC features from an audio signal
 def mfcc(signal, samplerate=8000, winlen=0.025, winstep=0.01, numcep=13,
          nfilt=26, nfft=None, lowfreq=0, highfreq=None, preemph=0.97, ceplifter=22, appendEnergy=True,
@@ -25,7 +28,6 @@ def mfcc(signal, samplerate=8000, winlen=0.025, winstep=0.01, numcep=13,
     feat = lifter(feat, ceplifter)
     if appendEnergy: feat[:, 0] = numpy.log(energy)  # replace first cepstral coefficient with log of frame energy
     return feat
-
 
 # Compute Mel-filterbank energy features from an audio signal.
 def fbank(signal, samplerate=8000, winlen=0.025, winstep=0.01,
@@ -73,7 +75,7 @@ def get_filterbanks2(nfilt=20, nfft=1024, samplerate=8000, lowfreq=0, highfreq=N
     highfreq = highfreq or samplerate / 2
     assert highfreq <= samplerate / 2, "highfreq is greater than samplerate/2"
 
-    # features taken of Makowski's book
+    # coefficients taken from Makowski's book
     a = 6.23 * 10 ** (-6)
     b = 9.34 * 10 ** (-2)
     c = 28.52
@@ -244,3 +246,29 @@ def logpowspec(frames, NFFT, norm=1):
 
 def preemphasis(signal, coeff=0.95):
     return numpy.append(signal[0], signal[1:] - coeff * signal[:-1])
+
+'''
+The MIT License (MIT)
+
+Copyright (c) 2013 James Lyons
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+>>>Link to original code:
+https://github.com/jameslyons/python_speech_features/blob/master/python_speech_features/base.py
+'''
