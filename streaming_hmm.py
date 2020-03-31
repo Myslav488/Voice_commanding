@@ -79,7 +79,6 @@ if __name__ == '__main__':
             # normalizacja do rms sygnalu
             rms = np.sqrt(np.mean(audio ** 2))
             audio = audio / rms
-            print("RMS z bazy: ", rms)
             # filtr preemfazy
             audio = filt.preemfaza(audio, 0.95)
 
@@ -126,7 +125,7 @@ if __name__ == '__main__':
 
          # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
-        print("RMS z maina: ", rms)
+        # print("RMS z maina: ", rms)
         global rms1
         rms1 = 0.8 * rms1 + 0.2 * rms
         # print("Wartosc rms do normalizacji: ", rms1)
@@ -196,12 +195,12 @@ if __name__ == '__main__':
             if score > max_score:
                 max_score = score
                 output_label = label
-            # print(label, score)
+            print(label, score)
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
         global g_time
 
-        print("\nUplyniety czas: %s sek" % (time.time() - g_time))
+        print("\nCzas rozpoznawania slowa: %s sek" % (time.time() - g_time))
         g_time = time.time()
 
         # aktywacja animacji wyswietlenia sygnalu

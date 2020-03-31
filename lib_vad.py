@@ -17,9 +17,14 @@ def wstepne_zazn(pow_vec, prog=1, stan_wysoki=1):
             wektor_zazn[cnt] = stan_wysoki
     return wektor_zazn
 
+#funkcja usuwa krotkie, pojedyncze piki
 def usun_krotkie(wektor_zazn, stan_wysoki, Fs):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
     wsp = int(Fs/1000)
+    # jak krotkie(w ms)
+    dlg = 100
+    #jak blisko nich nie moga sie znajdowac inne piki(w ms)
+    obok = 400
     # licznik aktywnosci sygnalu
     znak = 0
     # petla wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
@@ -29,8 +34,8 @@ def usun_krotkie(wektor_zazn, stan_wysoki, Fs):
         elif stan_wysoki == wektor_zazn[cnt] and znak > 0:
             znak += 1
         elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt]:
-            if znak < wsp * 100 and not any(wektor_zazn[cnt + 1:cnt + wsp * 400 + 1]) and not any(
-                    wektor_zazn[cnt - znak - wsp * 400:cnt - znak - 1]):
+            if znak < wsp * dlg and not any(wektor_zazn[cnt + 1:cnt + wsp * obok + 1]) and not any(
+                    wektor_zazn[cnt - znak - wsp * obok:cnt - znak - 1]):
                 wektor_zazn[cnt - znak:cnt] = 0
             znak = 0
 
@@ -42,15 +47,17 @@ def usun_krotkie(wektor_zazn, stan_wysoki, Fs):
 def warunkowe_zazn(wektor_zazn, pow_vec, Fs, stan_wysoki=1, poczatek=0, koniec=-1):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
     wsp = int(Fs/1000)
+    # ile ms sygnalu zaznczayc(w ms)
+    ile = 300
     cnt = poczatek
     while cnt < koniec:
         if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and any(
-                stan_wysoki / 2 < pow_vec[cnt - 300 * wsp:cnt]):
-            wektor_zazn[cnt - 300 * wsp:cnt] = stan_wysoki
+                stan_wysoki / 2 < pow_vec[cnt - ile * wsp:cnt]):
+            wektor_zazn[cnt - ile * wsp:cnt] = stan_wysoki
         elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt] and any(
-                stan_wysoki / 2 < pow_vec[cnt:cnt + 300 * wsp]):
-            wektor_zazn[cnt:cnt + 300 * wsp] = stan_wysoki
-            cnt += 300 * wsp
+                stan_wysoki / 2 < pow_vec[cnt:cnt + ile * wsp]):
+            wektor_zazn[cnt:cnt + ile * wsp] = stan_wysoki
+            cnt += ile * wsp
         cnt += 1
 
     return wektor_zazn
@@ -59,14 +66,16 @@ def warunkowe_zazn(wektor_zazn, pow_vec, Fs, stan_wysoki=1, poczatek=0, koniec=-
 def dodatkowe_zazn(wektor_zazn, Fs, stan_wysoki=1,poczatek=0, koniec=-1):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
     wsp = int(Fs/1000)
+    # ile ms sygnalu zaznczayc(w ms)
+    ile = 100
     cnt = poczatek
     while cnt < koniec:
-        if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and cnt > 200 * wsp:
-            wektor_zazn[cnt - 200 * wsp:cnt] = stan_wysoki
+        if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and cnt > ile * wsp:
+            wektor_zazn[cnt - ile * wsp:cnt] = stan_wysoki
         elif stan_wysoki == wektor_zazn[cnt - 1] and stan_wysoki != wektor_zazn[cnt] and len(
-                wektor_zazn) - cnt > 300 * wsp:
-            wektor_zazn[cnt:cnt + 200 * wsp] = stan_wysoki
-            cnt += 200 * wsp + 2
+                wektor_zazn) - cnt > ile * wsp:
+            wektor_zazn[cnt:cnt + ile * wsp] = stan_wysoki
+            cnt += ile * wsp + 2
         cnt += 1
     return wektor_zazn
 
