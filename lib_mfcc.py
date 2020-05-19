@@ -70,28 +70,24 @@ def get_filterbanks(nfilt=20, nfft=512, samplerate=8000, lowfreq=0, highfreq=Non
 
     # Compute a Human Factor Mel-filterbank.
 
-
-def get_filterbanks2(nfilt=20, nfft=1024, samplerate=8000, lowfreq=0, highfreq=None):
+# Compute a Human Factor Mel-filterbank.
+def get_filterbanks2(nfilt=20, nfft=1024, samplerate=8000, lowfreq=100, highfreq=None):
     highfreq = highfreq or samplerate / 2
     assert highfreq <= samplerate / 2, "highfreq is greater than samplerate/2"
 
-    # coefficients taken from Makowski's book
+    # features taken of Harris&Skowronski's paper
     a = 6.23 * 10 ** (-6)
     b = 9.34 * 10 ** (-2)
     c = 28.52
     ejj = lambda x: a * x ** 2 + b * x + c
-
     ad1 = 0.5 / (700 + lowfreq)
     bd1 = 700 / (700 + lowfreq)
-    cd1 = (-0.5 * lowfreq) / (1 + 700 / (700 + lowfreq))
-
+    cd1 = (-0.5 * lowfreq) * (1 + 700 / (700 + lowfreq))
     bk1 = (b - bd1) / (a - ad1)
     ck1 = (c - cd1) / (a - ad1)
-
     ad2 = -0.5 / (700 + highfreq)
     bd2 = -700 / (700 + highfreq)
-    cd2 = 0.5 * highfreq / (1 + 700 / (700 + highfreq))
-
+    cd2 = 0.5 * highfreq * (1 + 700 / (700 + highfreq))
     bk2 = (b - bd2) / (a - ad2)
     ck2 = (c - cd2) / (a - ad2)
 
@@ -99,33 +95,31 @@ def get_filterbanks2(nfilt=20, nfft=1024, samplerate=8000, lowfreq=0, highfreq=N
     fclow = (-bk1 + (bk1 ** 2 - 4 * ck1) ** 0.5) / 2
     fchigh = (-bk2 + (bk2 ** 2 - 4 * ck2) ** 0.5) / 2
 
-    # compute peaks evenly spaced
-    melpoints = numpy.linspace((fclow), (fchigh), (nfilt))
+    melpoints = numpy.zeros((1, nfilt))
+    for cnt in range(1, nfilt-1):
+        melpoints[0,cnt] = hz2mel(fclow) + (cnt)*(hz2mel(fchigh)-hz2mel(fclow))/(nfilt-1)
     # convert mel to hz
     peakpoints = mel2hz(melpoints)
+    peakpoints[0,0]= fclow
+    peakpoints[0,nfilt-1]= fchigh
 
     # get extreme marginal of filters
-    lowpoints = numpy.ones(len(peakpoints)) * (-700 - ejj(peakpoints) + (
-                (700 + ejj(peakpoints)) ** 2 + peakpoints * (peakpoints + 1400) - 1400 * ejj(peakpoints)) ** 0.5)
+    lowpoints = numpy.ones(len(peakpoints))* (-700 - ejj(peakpoints) + ((700 + ejj(peakpoints)) ** 2 + peakpoints * (peakpoints + 1400) - 1400 * ejj(peakpoints)) ** 0.5)
     highpoints = numpy.ones(len(peakpoints)) * (lowpoints + 2 * ejj(peakpoints))
 
-    # normalization
-    minn = min(min(lowpoints), min(peakpoints), min(highpoints))
-    maxx = max(max(lowpoints), max(peakpoints), max(highpoints))
-    peakpoints = numpy.floor((nfft + 1) * (peakpoints - minn) / (2 * maxx))
-    lowpoints = numpy.floor((nfft + 1) * (lowpoints - minn) / (2 * maxx))
-    highpoints = numpy.floor((nfft + 1) * (highpoints - minn) / (2 * maxx))
+    lowpoints = numpy.floor((nfft / 2+1)*lowpoints/(samplerate / 2+1))
+    peakpoints = numpy.floor((nfft / 2+1)*peakpoints/(samplerate / 2+1))
+    highpoints = numpy.floor((nfft / 2+1)*highpoints/(samplerate / 2+1))
 
     # shaping filters
-    fbank = numpy.zeros([nfilt, nfft // 2 + 1])
-    for j in range(0, len(peakpoints)):
-        for i in range(int(lowpoints[j]), int(peakpoints[j])):
-            fbank[j, i] = (i - lowpoints[j]) / (peakpoints[j] - lowpoints[j])
-        for i in range(int(peakpoints[j]), int(highpoints[j])):
-            fbank[j, i] = (highpoints[j] - i) / (highpoints[j] - peakpoints[j])
+    fbank = numpy.zeros([nfilt, nfft//2+1])
+    for filtr in range(0, len(peakpoints[0,:])):
+        for i in range(int(lowpoints[0,filtr]), int(peakpoints[0,filtr])):
+            fbank[filtr, i] = (i- lowpoints[0,filtr]) / (peakpoints[0,filtr] - lowpoints[0,filtr])
+        for i in range(int(peakpoints[0,filtr]), int(highpoints[0,filtr]+1)):
+            fbank[filtr, i] = (highpoints[0,filtr] - i) / (highpoints[0,filtr] - peakpoints[0,filtr])
 
     return fbank
-
 
 # Compute log Mel-filterbank energy features from an audio signal.
 def logfbank(signal, samplerate=8000, winlen=0.025, winstep=0.02,
