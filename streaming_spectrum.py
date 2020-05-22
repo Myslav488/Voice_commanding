@@ -33,37 +33,39 @@ def animate(i):
     Fs, audio = filt.decymacja(audio, Fs, 6)
 
     # normalization
-    rms = np.sqrt(np.mean(audio ** 2))
-    audio1 = audio / rms
+    # rms = np.sqrt(np.mean(audio ** 2))
+    rms = 8 * 10 ** 6
+    audio = audio / rms
 
     # filtr preemfazy
     audio = filt.preemfaza(audio, 0.95)
 
+    # audio = filt.filtr_odcinaniezwidma(audio, Fs, 20, 0.8)
+
     audiofft = fft(audio)
     audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
-    '''
-    ##Filtracja dzwieku wentylatora
-    # zapisywanie widma sygnalu
-    # if os.path.exists("widmo.csv"):
-    #   os.remove("widmo.csv")
-    # audiofft.tofile("widmo.csv", sep=';', format='%10.5f')
+
+    '''# zapisywanie widma sygnalu
+    #if os.path.exists("widmo.csv"):
+    #    os.remove("widmo.csv")
+    #audiofft.tofile("widmo.csv", sep=';', format='%10.5f')
 
     # wczytywanie widma sygnalu
     audiox = np.fromfile("widmo.csv", sep=';')
     # print(np.info(audiox))
 
-    for cnt in range(260,300):
+    for cnt in range(260, 300):
         print(np.argmax(audiox[260:300]), np.argmax(audiofft[260:300]))
         if np.argmax(audiox[260:300]) == np.argmax(audiofft[260:300]):
-            audiofft -= audiox
+            audiofft = np.sqrt(audiofft**2 - audiox**2)
             print("Tniemy")
             break
 
         else:
             audiofft = np.append(audiofft[1:], 0)
             print("NIE Tniemy")
-            continue
-    '''
+            continue'''
+
     # freq axis
     x_values = np.arange(0, len(audiofft), 1)
     plt.cla()

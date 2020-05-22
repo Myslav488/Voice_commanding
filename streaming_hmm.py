@@ -80,7 +80,7 @@ if __name__ == '__main__':
             rms = np.sqrt(np.mean(audio ** 2))
             audio = audio / rms
             # filtr preemfazy
-            audio = filt.preemfaza(audio, 0.95)
+            # audio = filt.preemfaza(audio, 0.95)
 
             # extract mfcc features
             mfcc_feats = mfcc(audio, Fs)
@@ -127,14 +127,14 @@ if __name__ == '__main__':
         rms = np.sqrt(np.mean(audio ** 2))
         # print("RMS z maina: ", rms)
         global rms1
-        rms1 = 0.8 * rms1 + 0.2 * rms
+        rms1 = 0.9 * rms1 + 0.1 * rms
         # print("Wartosc rms do normalizacji: ", rms1)
         audio = audio / rms1
         # filtr preemfazy
-        audio = filt.preemfaza(audio, 0.95)
+        # audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 8
+        prog = 9
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
         wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
 
-        # petla wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
+        # funkcja wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
         wektor_zazn = vad.usun_krotkie(wektor_zazn, stan_wysoki, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi
@@ -166,7 +166,7 @@ if __name__ == '__main__':
         wholerun3 = np.append(wholerun3, pow_vec)
 
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, 8000, len(wholerun2) - 8000)
+        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2) - 8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
         wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000, len(wholerun2) - 8000)

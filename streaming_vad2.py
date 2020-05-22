@@ -44,26 +44,30 @@ if __name__ == '__main__':
         # decymacja
         Fs, audio = filt.decymacja(audio, Fs, 6)
 
-         # normalizacja do rms sygnalu
+        # dlugosc okna w ms * 1000 / Fs
+        winlen = 10 * 8
+        audio = filt.odejm_wart_sr(audio, winlen)
+
+        # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
         global rms1
-        rms1 = 0.8 * rms1 + 0.2 * rms
+        print("UWAGA TO TEN WARIAT: ", np.floor(rms1))
+        rms1 = 0.9 * rms1 + 0.1 * rms
         # print("Wartosc rms do normalizacji: ", rms1)
         audio = audio / rms1
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
 
-        # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 8
+        # audio = filt.filtr_odcinaniezwidma(audio, Fs)
 
-        # dlugosc okna w ms * 1000 / Fs
-        winlen = 10 * 8
+        # prog mocy calego sygnalu (wyznaczany empirycznie)
+        prog = 9
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
         pow_vec = vad.vec_pow(audio, winlen)
 
-        # wektor wyroznienia sygnalu z informacja glosowa
+        # wartosc stanu wysokiego (tylko do wizualizacji danych)
         stan_wysoki = 2
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
@@ -86,7 +90,7 @@ if __name__ == '__main__':
         wholerun3 = np.append(wholerun3, pow_vec)
 
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, 8000, len(wholerun2)-8000)
+        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2)-8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
         wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000,  len(wholerun2)-8000)

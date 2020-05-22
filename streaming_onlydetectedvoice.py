@@ -49,14 +49,14 @@ if __name__ == '__main__':
          # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
         global rms1
-        rms1 = 0.8 * rms1 + 0.2 * rms
+        rms1 = 0.9 * rms1 + 0.1 * rms
         # print("Wartosc rms do normalizacji: ", rms1)
         audio = audio / rms1
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 6
+        prog = 9
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         wholerun3 = np.append(wholerun3, pow_vec)
 
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, 8000, len(wholerun2)-8000)
+        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki,prog, 8000, len(wholerun2)-8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
         wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000,  len(wholerun2)-8000)
@@ -99,13 +99,27 @@ if __name__ == '__main__':
         if (len(temp_wyj)>4000):
             wyjscie = temp_wyj
 
-        mfcc_feat = mfcc((wyjscie), Fs)
+        ''' mfcc_feat = mfcc((wyjscie), Fs)
         # fbank_feat = logfbank(audio1,sampling_freq)
         mfcc_feat = mfcc_feat.T
-
         # rysowanie wykresow
         plt.cla()
-        plt.imshow(mfcc_feat)
+        plt.imshow(mfcc_feat)'''
+
+        rmss = np.ones((len(wyjscie.T)),) * np.sqrt(np.mean(wyjscie ** 2)) # np.var(wyjscie) #
+
+        rmss2 = np.zeros((len(wyjscie.T)),)
+        for cnt in range(0, int(len(wyjscie) / winlen)):
+            rmss2[cnt*winlen:(cnt+1)*winlen] = np.sqrt(np.mean(wyjscie[cnt*winlen:(cnt+1)*winlen] ** 2))# np.var(wyjscie[cnt*winlen:(cnt+1)*winlen])
+
+        x_values = np.arange(0, len(wyjscie.T), 1)
+
+        Mr = filt.moment_erowy(wyjscie, Fs, 3, winlen)
+        Mr /= max(Mr)
+        plt.cla()
+        plt.plot(x_values, wyjscie.T, x_values, Mr, label='Signal')
+        plt.legend(loc='upper left')
+        plt.tight_layout()
 
     # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
