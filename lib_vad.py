@@ -42,7 +42,7 @@ def usun_krotkie(wektor_zazn, stan_wysoki, Fs):
     return wektor_zazn
 
 
-# petla zaznaczenia 300 ms aktywnosci przed i po sygnale,
+# funkcja zaznaczenia 300 ms aktywnosci przed i po sygnale,
 # jesli moc fragmentu sygnalu przekracza polowe progu.
 def warunkowe_zazn(wektor_zazn, pow_vec, Fs, stan_wysoki=1, prog=1, poczatek=0, koniec=-1):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
@@ -50,6 +50,7 @@ def warunkowe_zazn(wektor_zazn, pow_vec, Fs, stan_wysoki=1, prog=1, poczatek=0, 
     # ile ms sygnalu zaznczayc(w ms)
     ile = 300
     cnt = poczatek
+    # petla wykrywajaca poczatek i koniec zaznaczenia i zaznaczjaca po nich jesli moc przekracza polowe progu
     while cnt < koniec:
         if stan_wysoki == wektor_zazn[cnt] and stan_wysoki != wektor_zazn[cnt - 1] and any(
                 prog / 2 < pow_vec[cnt - ile * wsp:cnt]):

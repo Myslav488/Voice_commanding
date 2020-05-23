@@ -85,7 +85,7 @@ def moment_pierwszy(audio, Fs, ramka=15):
         audiofft = fft.fft(audio[int(cnt*ramka):int((cnt+1)*ramka)])
         audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs//2)])
 
-        M1[int(cnt*ramka):int((cnt+1)*ramka)] =  sum([i*x**2 for x, i in enumerate(audiofft)])
+        M1[int(cnt*ramka):int((cnt+1)*ramka)] = sum([i*x**2 for x, i in enumerate(audiofft)])
 
     return M1/moment_zerowy(audio, Fs)
 
@@ -95,13 +95,13 @@ def moment_erowy(audio, Fs, r, ramka=15):
     elif(1 == r):
         return moment_pierwszy(audio, Fs, ramka)
     else:
-        Mr = np.array(np.arange(len(audio),))
+        Mr = np.zeros(len(audio),)
         for cnt in range(0, int(len(audio)/ramka)):
             audiofft = fft.fft(audio[int(cnt*ramka):int((cnt+1)*ramka)])
             audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs//2)])
 
             M1 = np.mean(moment_pierwszy(audio[int(cnt*ramka):int((cnt+1)*ramka)], Fs, ramka))
-            print(cnt, M1)
             Mr[int(cnt*ramka):int((cnt+1)*ramka)] = sum([((i-M1)**r)*x**2 for x, i in enumerate(audiofft)])
+            # print(Mr[int(cnt*ramka):int((cnt+1)*ramka)])
 
         return Mr/moment_zerowy(audio, Fs)

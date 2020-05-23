@@ -13,7 +13,8 @@ wholerun2 = [0] * 24000
 wholerun3 = [0] * 24000
 
 # globalna wartosc rms do normalizacji
-rms1 = 10**3
+rms1 = 0
+rmstla = 0
 
 if __name__ == '__main__':
 
@@ -50,22 +51,31 @@ if __name__ == '__main__':
 
         # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
+        #utrzymanie rms na stabilnym poziomie
+        if rms > 1000: rms /= (rms // 500)
+        if rms < 500: rms *= 2
         global rms1
+        if 0 == rms1:
+            rms1 = rms
+        if 0 != rms1:
+            rms1 = 0.9 * rms1 + 0.1 * rms
+            audio = audio / rms1
+
         print("UWAGA TO TEN WARIAT: ", np.floor(rms1))
-        rms1 = 0.9 * rms1 + 0.1 * rms
-        # print("Wartosc rms do normalizacji: ", rms1)
-        audio = audio / rms1
+
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
 
         # audio = filt.filtr_odcinaniezwidma(audio, Fs)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 9
+        prog = rms/50
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
         pow_vec = vad.vec_pow(audio, winlen)
+
+
 
         # wartosc stanu wysokiego (tylko do wizualizacji danych)
         stan_wysoki = 2
@@ -89,6 +99,17 @@ if __name__ == '__main__':
         wholerun3 = wholerun3[len(audio):]
         wholerun3 = np.append(wholerun3, pow_vec)
 
+        # moc tla
+        global rmstla
+        # przydziel rmstla wartosci mocy fragmentow sygnalu ktore nie przekraczaja wyznaczonego progu
+        for cnt in range(0, int(len(wholerun3)/winlen)):
+            if 0 == rmstla and (wholerun3[cnt * winlen]) < prog:
+                rmstla = wholerun3[cnt * winlen]
+            if 0 != rmstla and (wholerun3[cnt * winlen])*2 < prog: # and wholerun3[cnt * winlen] < 1.5*rmstla
+                rmstla = 0.2 * rmstla + 0.8 * wholerun3[cnt * winlen]
+        print("Wart skut tla: ", rmstla)
+        print("Prog to: ", prog)
+
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
         wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2)-8000)
 
@@ -97,12 +118,13 @@ if __name__ == '__main__':
 
         # os czasu
         x_values = np.arange(0, len(wholerun1), 1) / float(Fs)
+        yrmsv = np.ones((len(wholerun1), ))*rmstla
         # przeskalowanie osi do sekund
         x_values *= 1000
 
         # rysowanie wykresow
         plt.cla()
-        plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, label='Signal')
+        plt.plot(x_values, wholerun1, x_values, wholerun2, x_values, wholerun3, x_values, yrmsv, label='Signal')
         plt.legend(loc='upper right')
         plt.tight_layout()
 

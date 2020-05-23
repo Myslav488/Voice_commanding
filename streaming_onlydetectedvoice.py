@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
         x_values = np.arange(0, len(wyjscie.T), 1)
 
-        Mr = filt.moment_erowy(wyjscie, Fs, 3, winlen)
-        Mr /= max(Mr)
+        Mr = filt.moment_erowy(wyjscie, Fs, 2, winlen)
+        Mr = Mr / 10**18
         plt.cla()
         plt.plot(x_values, wyjscie.T, x_values, Mr, label='Signal')
         plt.legend(loc='upper left')

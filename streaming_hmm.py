@@ -23,7 +23,7 @@ rms1 = 10**3
 
 # definiowanie klasy HMM
 class HMMtrainer(object):
-    def __init__(self, model_name='GaussianHMM', n_components=4, cov_type='diag', n_iter=1000):
+    def __init__(self, model_name='GaussianHMM', n_components=10, cov_type='spherical', n_iter=1000):
         self.model_name = model_name
         self.n_components = n_components
         self.cov_type = cov_type
