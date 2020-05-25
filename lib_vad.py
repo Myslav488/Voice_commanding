@@ -47,7 +47,7 @@ def usun_krotkie(wektor_zazn, stan_wysoki, Fs):
 def warunkowe_zazn(wektor_zazn, pow_vec, Fs, stan_wysoki=1, prog=1, poczatek=0, koniec=-1):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
     wsp = int(Fs/1000)
-    # ile ms sygnalu zaznczayc(w ms)
+    # ile ms sygnalu zaznczayc
     ile = 300
     cnt = poczatek
     # petla wykrywajaca poczatek i koniec zaznaczenia i zaznaczjaca po nich jesli moc przekracza polowe progu

@@ -56,7 +56,7 @@ if __name__ == '__main__':
         rms = np.sqrt(np.mean(audio ** 2))
 
         # utrzymanie rms na stabilnym poziomie
-        if rms > 10 ** 8: rms /= (rms // 5 * 10 ** 7)
+        if rms > 10 ** 8: rms /= (rms//(5*10**7))
         if rms < 5 * 10 ** 7: rms *= 2
         global rms1
         if 0 == rms1:
@@ -78,12 +78,12 @@ if __name__ == '__main__':
         pow_vec = vad.vec_pow(audio, winlen)
 
         # wektor wyroznienia sygnalu z informacja glosowa
-        stan_wysoki = 2
+        stan_wysoki = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
         wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
 
-        # petla wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
+        # petla wyciecia impulsow krotszych niz 200 ms ktore nie sasiaduja z zadnym innym sygnalem
         wektor_zazn = vad.usun_krotkie(wektor_zazn, stan_wysoki, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi

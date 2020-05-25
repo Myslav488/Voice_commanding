@@ -51,8 +51,9 @@ if __name__ == '__main__':
 
         # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
+
         #utrzymanie rms na stabilnym poziomie
-        if rms > 10**8: rms /= (rms // 5*10**7)
+        if rms > 10**8: rms /= (rms // (5*10**7))
         if rms < 5*10**7: rms *= 2
         global rms1
         if 0 == rms1:
@@ -61,8 +62,6 @@ if __name__ == '__main__':
             rms1 = 0.9 * rms1 + 0.1 * rms
             audio = audio / rms1
 
-        print("URMS to : ", np.floor(rms1))
-
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
 
@@ -70,13 +69,14 @@ if __name__ == '__main__':
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
         prog = rms/(25*10**5)
+        print("Prog to: ", prog)
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
         pow_vec = vad.vec_pow(audio, winlen)
 
         # wartosc stanu wysokiego (tylko do wizualizacji danych)
-        stan_wysoki = 2
+        stan_wysoki = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
         wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
@@ -106,7 +106,6 @@ if __name__ == '__main__':
             if 0 != rmstla and (wholerun3[cnt * winlen])*2 < prog: # and wholerun3[cnt * winlen] < 1.5*rmstla
                 rmstla = 0.8 * rmstla + 0.2 * wholerun3[cnt * winlen]
         print("Wart skut tla: ", rmstla)
-        print("Prog to: ", prog)
 
         # funkcja zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
         wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2)-8000)

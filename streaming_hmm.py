@@ -134,19 +134,19 @@ if __name__ == '__main__':
         rms = np.sqrt(np.mean(audio ** 2))
 
         # utrzymanie rms na stabilnym poziomie
-        if rms > 10 ** 8: rms /= (rms // 5 * 10 ** 7)
-        if rms < 5 * 10 ** 7: rms *= 2
+        if rms > 10**8: rms /= (rms//(5*10**7))
+        if rms < 5*10**7: rms *= 2
         global rms1
         if 0 == rms1:
             rms1 = rms
         if 0 != rms1:
-            rms1 = 0.9 * rms1 + 0.1 * rms
+            rms1 = 0.9*rms1 + 0.1*rms
             audio = audio / rms1
         # filtr preemfazy
         # audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = rms/(25*10**5)
+        prog = rms/(2.5*10**6)
         print("RMS to: ", rms)
         print("PRoG ", prog)
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         pow_vec = vad.vec_pow(audio, winlen)
 
         # wektor wyroznienia sygnalu z informacja glosowa
-        stan_wysoki = 2
+        stan_wysoki = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
         wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
@@ -196,11 +196,9 @@ if __name__ == '__main__':
         global wyjscie
         temp_wyj = vad.ekstrakcja(wholerun1, wholerun2, stan_wysoki)
         if (len(temp_wyj) > 4000):
-            wyjscie = temp_wyj
-
-            if 0 != any(wyjscie):
-                wyjscie = vad.obcinanie_brzegow(wyjscie, rmstla)
-
+            wyjscie = vad.obcinanie_brzegow(temp_wyj, rmstla)
+            
+        print((len(wyjscie)/8000))
         mfcc_feat = mfcc((wyjscie), Fs)
         # mfcc_feat = mfcc_feat.T
 
