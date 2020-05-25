@@ -12,10 +12,11 @@ import os
 wholerun1 = [0] * 24000
 wholerun2 = [0] * 24000
 wholerun3 = [0] * 24000
-wyjscie = np.zeros((1,100))
-# globalna wartosc rms do normalizacji
-rms1 = 10**8
+wyjscie = np.zeros((100,))
 
+# globalna wartosc rms do normalizacji
+rms1 = 0
+rmstla = 0
 
 if __name__ == '__main__':
 
@@ -46,20 +47,31 @@ if __name__ == '__main__':
         # decymacja
         Fs, audio = filt.decymacja(audio, Fs, 6)
 
-         # normalizacja do rms sygnalu
+        # dlugosc okna w ms * 1000 / Fs
+        winlen = 10 * 8
+        # odejmowanie wart sredniej
+        audio = filt.odejm_wart_sr(audio, winlen)
+
+        # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
+
+        # utrzymanie rms na stabilnym poziomie
+        if rms > 10 ** 8: rms /= (rms // 5 * 10 ** 7)
+        if rms < 5 * 10 ** 7: rms *= 2
         global rms1
-        rms1 = 0.9 * rms1 + 0.1 * rms
-        # print("Wartosc rms do normalizacji: ", rms1)
-        audio = audio / rms1
+        if 0 == rms1:
+            rms1 = rms
+        if 0 != rms1:
+            rms1 = 0.9 * rms1 + 0.1 * rms
+            audio = audio / rms1
+
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = 9
-
-        # dlugosc okna w ms * 1000 / Fs
-        winlen = 10 * 8
+        prog = rms/(25*10**5)
+        print("RMS to: ", rms)
+        print("PRoG ", prog)
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
@@ -87,6 +99,16 @@ if __name__ == '__main__':
         wholerun3 = wholerun3[len(audio):]
         wholerun3 = np.append(wholerun3, pow_vec)
 
+        # moc tla
+        global rmstla
+        # przydziel rmstla wartosci mocy fragmentow sygnalu ktore nie przekraczaja wyznaczonego progu
+        for cnt in range(0, int(len(wholerun3) / winlen)):
+            if 0 == rmstla and (wholerun3[cnt * winlen]) < prog:
+                rmstla = wholerun3[cnt * winlen]
+            if 0 != rmstla and (wholerun3[cnt * winlen]) * 2 < prog:  # and wholerun3[cnt * winlen] < 1.5*rmstla
+                rmstla = 0.2 * rmstla + 0.8 * wholerun3[cnt * winlen]
+
+        print("RMS tla to ", rmstla)
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
         wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki,prog, 8000, len(wholerun2)-8000)
 
@@ -99,6 +121,9 @@ if __name__ == '__main__':
         if (len(temp_wyj)>4000):
             wyjscie = temp_wyj
 
+            if 0 != any(wyjscie):
+                wyjscie = vad.obcinanie_brzegow(wyjscie, rmstla)
+
         ''' mfcc_feat = mfcc((wyjscie), Fs)
         # fbank_feat = logfbank(audio1,sampling_freq)
         mfcc_feat = mfcc_feat.T
@@ -106,18 +131,18 @@ if __name__ == '__main__':
         plt.cla()
         plt.imshow(mfcc_feat)'''
 
-        rmss = np.ones((len(wyjscie.T)),) * np.sqrt(np.mean(wyjscie ** 2)) # np.var(wyjscie) #
-
+        '''rmss = np.ones((len(wyjscie.T)),) * np.sqrt(np.mean(wyjscie ** 2)) # np.var(wyjscie) #
         rmss2 = np.zeros((len(wyjscie.T)),)
         for cnt in range(0, int(len(wyjscie) / winlen)):
-            rmss2[cnt*winlen:(cnt+1)*winlen] = np.sqrt(np.mean(wyjscie[cnt*winlen:(cnt+1)*winlen] ** 2))# np.var(wyjscie[cnt*winlen:(cnt+1)*winlen])
+            rmss2[cnt*winlen:(cnt+1)*winlen] = np.sqrt(np.mean(wyjscie[cnt*winlen:(cnt+1)*winlen] ** 2))# np.var(wyjscie[cnt*winlen:(cnt+1)*winlen])'''
 
-        x_values = np.arange(0, len(wyjscie.T), 1)
+        x_values = np.arange(0, len(wyjscie), 1)/float(Fs)
+        x_values *= 1000
 
-        Mr = filt.moment_erowy(wyjscie, Fs, 2, winlen)
-        Mr = Mr / 10**18
+        '''Mr = filt.moment_erowy(wyjscie, Fs, 2, winlen)
+        Mr = Mr / 10**18'''
         plt.cla()
-        plt.plot(x_values, wyjscie.T, x_values, Mr, label='Signal')
+        plt.plot(x_values, wyjscie.T,label='Signal')
         plt.legend(loc='upper left')
         plt.tight_layout()
 

@@ -87,14 +87,17 @@ def ekstrakcja(sygnal, wektor_zazn, stan_wysoki):
     cnt1 = 0
     cnt2 = 0
     while cnt1 < (len(sygnal) - 8000):
+        # wykryj poczatek zaznaczenia
         if stan_wysoki == wektor_zazn[cnt1] and stan_wysoki != wektor_zazn[cnt1 - 1] and cnt1 < 8000:
             wyniki[cnt2, 0] = cnt1
             wyniki[cnt2, 1] += 1
             cnt1 += 1
         elif stan_wysoki == wektor_zazn[cnt1] and stan_wysoki == wektor_zazn[cnt1 - 1] and 4000 < cnt1 < 16000:
+            # oblicz dlugosc zaznaczenia
             wyniki[cnt2, 1] += 1
             cnt1 += 1
-        elif stan_wysoki != wektor_zazn[cnt1] and stan_wysoki == wektor_zazn[cnt1 - 1]:
+        elif (stan_wysoki != wektor_zazn[cnt1] and stan_wysoki == wektor_zazn[cnt1 - 1]) or (stan_wysoki == wektor_zazn[cnt1] and cnt1 > 16000):
+            #wykryj koniec zaznaczenia i inkrementacja licznika 2
             cnt2 += 1
             cnt1 += 1
         else:
@@ -102,5 +105,25 @@ def ekstrakcja(sygnal, wektor_zazn, stan_wysoki):
 
         # # wybr najdluzszego odcinka czasowego z tablicy wycinkow
         z = np.argmax(wyniki[:,1])
-
+    # wytnij z sygnalu fragment od wyznaczonego indeksu
     return sygnal[int(wyniki[z,0]):int(wyniki[z,0])+int(wyniki[z,1])]
+
+def obcinanie_brzegow(fragment, prog):
+    #dlugosc brzegu do obciecia(10% fragmentu)
+    brzeg = int(0.1*len(fragment))
+    #stosunek probek powyzej progu do wszystkich w przedziale poczatkowego brzegu
+    xy = len([x for x in fragment[:brzeg] if x < prog ]) / len(fragment[:brzeg])
+
+    # jesli wiecej niz polowa probek jest ponizej progu w brzegowym fragmencie, wytnij go
+    if (xy > 0.5):
+        fragment = fragment[brzeg:]
+
+    # stosunek probek powyzej progu do wszystkich w przedziale koncowego brzegu
+    xy = len([x for x in fragment[-brzeg:] if x < prog]) / len(
+        fragment[-brzeg:])
+
+    # jesli wiecej niz polowa probek jest ponizej progu w brzegowym fragmencie, wytnij go
+    if (xy > 0.5):
+        fragment = fragment[:-brzeg]
+
+    return fragment

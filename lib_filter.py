@@ -3,14 +3,18 @@ import scipy.fftpack as fft
 import numpy as np
 
 def filtr_dol(audio, Fs, cutoff, filtrlen=1024):
-    # filtr antyaliasingowy
+    # filtr dolnopasmowy
+    # design filter
     filtr = scipy.signal.firwin2(filtrlen, [0, cutoff/Fs, 1.1*cutoff/Fs, 1], [1, 1, 0, 0])
+    # dokonaj splotu filtru i syganlu
     audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
-    audio = audio[:Fs]
+    # wytnij nadmierne fragmenty sygnalu po operacji splotu
+    audio = audio[filtrlen//2-1:(-filtrlen//2)]
+    # audio = audio[:Fs]
     return audio
 
 def filtr_gor(audio, Fs, cutoff, filtrlen=1024):
-    # flitr przeciwkoprzydzwiekowi
+    # flitr gornopasmowy
     filtr = scipy.signal.firwin(filtrlen-1, cutoff, fs=Fs, pass_zero=False)
     audio = scipy.signal.convolve(audio, filtr, mode='full', method='auto')
     audio = audio[filtrlen//2-1:(-filtrlen//2)+1]

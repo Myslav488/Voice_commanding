@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
-        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S16_LE', '-t', 'wav',
+        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
                      '-V', 'mono', '-v', 'input_read1.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
@@ -52,8 +52,8 @@ if __name__ == '__main__':
         # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
         #utrzymanie rms na stabilnym poziomie
-        if rms > 1000: rms /= (rms // 500)
-        if rms < 500: rms *= 2
+        if rms > 10**8: rms /= (rms // 5*10**7)
+        if rms < 5*10**7: rms *= 2
         global rms1
         if 0 == rms1:
             rms1 = rms
@@ -61,7 +61,7 @@ if __name__ == '__main__':
             rms1 = 0.9 * rms1 + 0.1 * rms
             audio = audio / rms1
 
-        print("UWAGA TO TEN WARIAT: ", np.floor(rms1))
+        print("URMS to : ", np.floor(rms1))
 
         # filtr preemfazy
         audio = filt.preemfaza(audio, 0.95)
@@ -69,13 +69,11 @@ if __name__ == '__main__':
         # audio = filt.filtr_odcinaniezwidma(audio, Fs)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = rms/50
+        prog = rms/(25*10**5)
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
         pow_vec = vad.vec_pow(audio, winlen)
-
-
 
         # wartosc stanu wysokiego (tylko do wizualizacji danych)
         stan_wysoki = 2
@@ -106,14 +104,14 @@ if __name__ == '__main__':
             if 0 == rmstla and (wholerun3[cnt * winlen]) < prog:
                 rmstla = wholerun3[cnt * winlen]
             if 0 != rmstla and (wholerun3[cnt * winlen])*2 < prog: # and wholerun3[cnt * winlen] < 1.5*rmstla
-                rmstla = 0.2 * rmstla + 0.8 * wholerun3[cnt * winlen]
+                rmstla = 0.8 * rmstla + 0.2 * wholerun3[cnt * winlen]
         print("Wart skut tla: ", rmstla)
         print("Prog to: ", prog)
 
-        # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
+        # funkcja zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
         wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2)-8000)
 
-        # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
+        # funkcja zaznaczenia 200 ms aktywnosci przed i po sygnale
         wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000,  len(wholerun2)-8000)
 
         # os czasu

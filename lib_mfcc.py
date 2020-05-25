@@ -1,6 +1,6 @@
 #A Library of functions to get signals features for voice recogntions
-#made by James Lyons(proper license info at the bottom of the code)
-#with my extra modifications
+#made by James Lyons(proper license info at the bottom of the code).
+#The code contains my extra modifications of HFCC function.
 
 from scipy.fftpack import dct
 import decimal
