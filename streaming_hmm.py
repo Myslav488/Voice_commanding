@@ -12,15 +12,19 @@ import time
 import os
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
-wholerun1 = [0] * 24000
-wholerun2 = [0] * 24000
-wholerun3 = [0] * 24000
-wyjscie = np.zeros((1,100))
+g_longsignal = [0] * 24000
+g_longsign = [0] * 24000
+g_longpower = [0] * 24000
+output = np.zeros((1, 100))
 g_time = time.time()
 
 # globalna wartosc rms do normalizacji
-rms1 = 0
+g_rms = 0
 rmstla = 0
+
+noise = wavfile.read('szum.wav')
+noise = noise[::6]
+noise = np.transpose(np.array([float((i)) for i in noise]))
 
 # definiowanie klasy HMM
 class HMMtrainer(object):
@@ -46,11 +50,11 @@ class HMMtrainer(object):
 
 if __name__ == '__main__':
 
-    if os.path.exists('input_read1.wav'):
-        os.remove('input_read1.wav')
+    if os.path.exists('record.wav'):
+        os.remove('record.wav')
 
     start_time = time.time()
-    input_folder = 'Baza2/'
+    input_folder = 'Baza/'
 
     hmm_models = []
 
@@ -75,11 +79,14 @@ if __name__ == '__main__':
             Fs, audio = wavfile.read(filepath)
 
             # flitr przeciwkoprzydzwiekowi
-            audio = filt.filtr_gor(audio, Fs, 360, 1024)
+            audio = filt.filter_hpf(audio, Fs, 360, 1024)
+
+            audio = np.transpose(np.array([float((i)) for i in audio]))
+            audio = filt.removeNoise(audio, noise)
 
             # normalizacja do rms sygnalu
             rms = np.sqrt(np.mean(audio ** 2))
-            print("RMS uczonych probek ",rms)
+            # print("RMS uczonych probek ",rms)
             audio = audio / rms
             # filtr preemfazy
             # audio = filt.preemfaza(audio, 0.95)
@@ -105,30 +112,32 @@ if __name__ == '__main__':
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
         proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
-                     '-V', 'mono', '-v', 'input_read1.wav']
+                     '-V', 'mono', '-v', 'record.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
-        print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
+        # print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
         # wczytywanie pliku z nagraniem
-        if os.path.exists('input_read1.wav'):
-            Fs, audio = wavfile.read('input_read1.wav', mmap=False)
+        if os.path.exists('record.wav'):
+            Fs, audio = wavfile.read('record.wav', mmap=False)
         else:
             Fs = 48000
             audio = [0]*Fs
 
         # filtr antyaliasingowy
-        audio = filt.filtr_dol(audio, Fs, 8000, 1024)
+        audio = filt.filter_lpf(audio, Fs, 8000, 1024)
 
         # flitr przeciwkoprzydzwiekowi
-        audio = filt.filtr_gor(audio, Fs, 360, 1024)
+        audio = filt.filter_hpf(audio, Fs, 360, 1024)
 
         # decymacja
-        Fs, audio = filt.decymacja(audio, Fs, 6)
+        Fs, audio = filt.decimation(audio, Fs, 6)
+        audio = np.transpose(np.array([float((i)) for i in audio]))
+        audio = filt.removeNoise(audio, noise)
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
         # odejmowanie wart sredniej
-        audio = filt.odejm_wart_sr(audio, winlen)
+        audio = filt.ded_mean(audio, winlen)
 
         # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio ** 2))
@@ -136,70 +145,70 @@ if __name__ == '__main__':
         # utrzymanie rms na stabilnym poziomie
         if rms > 10**8: rms /= (rms//(5*10**7))
         if rms < 5*10**7: rms *= 2
-        global rms1
-        if 0 == rms1:
-            rms1 = rms
-        if 0 != rms1:
-            rms1 = 0.9*rms1 + 0.1*rms
-            audio = audio / rms1
+        global g_rms
+        if 0 == g_rms:
+            g_rms = rms
+        if 0 != g_rms:
+            g_rms = 0.9*g_rms + 0.1*rms
+            audio = audio / g_rms
         # filtr preemfazy
         # audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        prog = rms/(2.5*10**6)
-        print("RMS to: ", rms)
-        print("PRoG ", prog)
+        thres = rms/(3.0*10**6)
+        # print("RMS to: ", rms, "PRoG ", thres)
 
         # wektor mocy sygnalu
         # petla obliczenia mocy sygnalu w okanach
-        pow_vec = vad.vec_pow(audio, winlen)
+        vec_pow = vad.vec_pow(audio, winlen)
 
         # wektor wyroznienia sygnalu z informacja glosowa
-        stan_wysoki = 10
+        high_state = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
-        wektor_zazn = vad.wstepne_zazn(pow_vec, prog, stan_wysoki)
+        vec_sign = vad.wstepne_zazn(vec_pow, thres, high_state)
 
         # funkcja wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
-        wektor_zazn = vad.usun_krotkie(wektor_zazn, stan_wysoki, Fs)
+        vec_sign = vad.usun_krotkie(vec_sign, high_state, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi
-        global wholerun1
-        wholerun1 = wholerun1[len(audio):]
-        wholerun1 = np.append(wholerun1, audio)
+        global g_longsignal
+        g_longsignal = g_longsignal[len(audio):]
+        g_longsignal = np.append(g_longsignal, audio)
 
-        global wholerun2
-        wholerun2 = wholerun2[len(audio):]
-        wholerun2 = np.append(wholerun2, wektor_zazn)
+        global g_longsign
+        g_longsign = g_longsign[len(audio):]
+        g_longsign = np.append(g_longsign, vec_sign)
 
-        global wholerun3
-        wholerun3 = wholerun3[len(audio):]
-        wholerun3 = np.append(wholerun3, pow_vec)
+        global g_longpower
+        g_longpower = g_longpower[len(audio):]
+        g_longpower = np.append(g_longpower, vec_pow)
 
         # moc tla
         global rmstla
         # przydziel rmstla wartosci mocy fragmentow sygnalu ktore nie przekraczaja wyznaczonego progu
-        for cnt in range(0, int(len(wholerun3) / winlen)):
-            if 0 == rmstla and (wholerun3[cnt * winlen]) < prog:
-                rmstla = wholerun3[cnt * winlen]
-            if 0 != rmstla and (wholerun3[cnt * winlen]) * 2 < prog:  # and wholerun3[cnt * winlen] < 1.5*rmstla
-                rmstla = 0.2 * rmstla + 0.8 * wholerun3[cnt * winlen]
+        for cnt in range(0, int(len(g_longpower) / winlen)):
+            if 0 == rmstla and (g_longpower[cnt * winlen]) < thres:
+                rmstla = g_longpower[cnt * winlen]
+            if 0 != rmstla and (g_longpower[cnt * winlen]) * 2 < thres:  # and wholerun3[cnt * winlen] < 1.5*rmstla
+                rmstla = 0.2 * rmstla + 0.8 * g_longpower[cnt * winlen]
 
-        print("RMS tla to ", rmstla)
+        # print("RMS tla to ", rmstla)
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        wholerun2 = vad.warunkowe_zazn(wholerun2, wholerun3, Fs, stan_wysoki, prog, 8000, len(wholerun2) - 8000)
+        g_longsign = vad.warunkowe_zazn(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
-        wholerun2 = vad.dodatkowe_zazn(wholerun2, Fs, stan_wysoki, 8000, len(wholerun2) - 8000)
+        g_longsign = vad.dodatkowe_zazn(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
 
         # ekstrakcja wykrytego sygnalu mowy
-        global wyjscie
-        temp_wyj = vad.ekstrakcja(wholerun1, wholerun2, stan_wysoki)
-        if (len(temp_wyj) > 4000):
-            wyjscie = vad.obcinanie_brzegow(temp_wyj, rmstla)
-            
-        print((len(wyjscie)/8000))
-        mfcc_feat = mfcc((wyjscie), Fs)
+        global output
+        temp_out= vad.ekstrakcja(g_longsignal, g_longsign, high_state)
+        if (len(temp_out) > 4000):
+            output = vad.obcinanie_brzegow(temp_out, rmstla)
+            g_longsign *= 0
+
+        # print((len(output)/8000))
+        mfcc_feat = mfcc((output), Fs)
         # mfcc_feat = mfcc_feat.T
 
         # rysowanie wykresow
@@ -217,7 +226,7 @@ if __name__ == '__main__':
             if score > max_score:
                 max_score = score
                 output_label = label
-            print(label, score)
+            # print(label, score)
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
         global g_time

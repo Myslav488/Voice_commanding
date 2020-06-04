@@ -8,27 +8,27 @@ import subprocess
 import os
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
-wholerun1 = [0] * 40000
-wholerun2 = [0] * 40000
+g_longsignal = [0] * 40000
+g_longsign = [0] * 40000
 audio1 = np.ndarray((8000,))
 audio2 = np.ndarray((8000,))
 wekt_zazn0 = np.ndarray((8000,))
 wekt_zazn2 = np.ndarray((8000,))
 
 # globalna wartosc rms do normalizacji
-rms1 = 10**8
+g_rms = 10 ** 8
 
 if __name__ == '__main__':
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
         proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
-                     '-V', 'mono', '-v', 'input_read1.wav']
+                     '-V', 'mono', '-v', 'record.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
         # wczytywanie pliku z nagraniem
-        Fs, audio0 = wavfile.read('../input_read1.wav', mmap=True)
+        Fs, audio0 = wavfile.read('../record.wav', mmap=True)
         # filtr antyaliasingowy
         filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
         audio0 = scipy.signal.convolve(audio0, filtr, mode='full', method='auto')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         global wekt_zazn2
          # normalizacja do rms sygnalu
         rms = np.sqrt(np.mean(audio1 ** 2))
-        global rms1
+        global g_rms
         rms1 = 0.8 * rms1 + 0.2 * rms
         print(rms)
         audio1 = audio1 / rms1
@@ -121,12 +121,12 @@ if __name__ == '__main__':
 
         # sklejanie sygnalow
         global audio2
-        global wholerun1
+        global g_longsignal
         wholerun1 = wholerun1[8000:]
         wholerun1 = np.append(wholerun1, audio2)
         audio2 = audio1
         audio1 = audio0
-        global wholerun2
+        global g_longsign
         wholerun2 = wholerun2[8000:]
         wholerun2 = np.append(wholerun2, wekt_zazn2)
         wekt_zazn2 = wektor_zazn

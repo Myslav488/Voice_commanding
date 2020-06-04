@@ -7,30 +7,30 @@ import numpy as np
 import subprocess
 import os
 
-if os.path.exists('input_read1.wav'):
-    os.remove('input_read1.wav')
+if os.path.exists('record.wav'):
+    os.remove('record.wav')
 
 def animate(i):
     proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
-                 '-V', 'mono', '-v', 'input_read1.wav']
+                 '-V', 'mono', '-v', 'record.wav']
     rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
     print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
     # wczytywanie pliku z nagraniem
-    if os.path.exists('input_read1.wav'):
-        Fs, audio = wavfile.read('input_read1.wav', mmap=False)
+    if os.path.exists('record.wav'):
+        Fs, audio = wavfile.read('record.wav', mmap=False)
     else:
         Fs = 48000
         audio = [0] * Fs
 
     # filtr antyaliasingowy
-    audio = filt.filtr_dol(audio, Fs, 8000, 1024)
+    audio = filt.filter_lpf(audio, Fs, 8000, 1024)
 
     # flitr przeciwkoprzydzwiekowi
-    audio = filt.filtr_gor(audio, Fs, 360, 1024)
+    audio = filt.filter_hpf(audio, Fs, 360, 1024)
 
     # decymacja
-    Fs, audio = filt.decymacja(audio, Fs, 6)
+    Fs, audio = filt.decimation(audio, Fs, 6)
 
     # normalization
     # rms = np.sqrt(np.mean(audio ** 2))
@@ -38,7 +38,7 @@ def animate(i):
     audio = audio / rms
 
     # filtr preemfazy
-    audio = filt.preemfaza(audio, 0.95)
+    audio = filt.preemphasis(audio, 0.95)
 
     # audio = filt.filtr_odcinaniezwidma(audio, Fs, 20, 0.8)
 

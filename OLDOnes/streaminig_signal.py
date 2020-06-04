@@ -8,16 +8,16 @@ from matplotlib.animation import FuncAnimation
 import scipy.signal
 # plt.style.use('fivethirtyeight')
 wholerun = [0] * 40000
-rms1 = 0
+g_rms = 0
 
 def animate(i):
     proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
-                 '-V', 'mono', '-v', 'input_read1.wav']
+                 '-V', 'mono', '-v', 'szum.wav']
     rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
     print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
     # read the input file
-    Fs, audio = wavfile.read('../input_read1.wav', mmap=True)
+    Fs, audio = wavfile.read('szum.wav', mmap=True)
 
     # antyaliasing filter
     filtr = scipy.signal.firwin2(1024, [0, 0.167, 0.183, 1], [1, 1, 0, 0])
@@ -35,7 +35,7 @@ def animate(i):
 
     # normalization
     rms = np.sqrt(np.mean(audio1 ** 2))
-    global rms1
+    global g_rms
     rms1 = 0.8 * rms1 + 0.2 * rms
     audio1 = audio1 / rms1
     audio2 = np.append(audio1[0], audio1[1:] - 0.95 * audio1[:-1])
