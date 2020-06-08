@@ -4,6 +4,7 @@ import scipy.io.wavfile as wavfile
 from lib_mfcc import mfcc, logfbank
 import lib_filter as filt
 import lib_vad as vad
+import lib_drv as drv
 from hmmlearn import hmm
 import numpy as np
 import subprocess
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         os.remove('record.wav')
 
     start_time = time.time()
-    input_folder = 'Baza3/'
+    input_folder = 'Baza2/'
 
     hmm_models = []
 
@@ -78,7 +79,7 @@ if __name__ == '__main__':
             filepath = os.path.join(subfolder, filename)
             Fs, audio = wavfile.read(filepath)
 
-            '''# flitr przeciwkoprzydzwiekowi
+            # flitr przeciwkoprzydzwiekowi
             audio = filt.filter_hpf(audio, Fs, 360, 1024)
 
             audio = np.transpose(np.array([float((i)) for i in audio]))
@@ -89,7 +90,7 @@ if __name__ == '__main__':
             # print("RMS uczonych probek ",rms)
             audio = audio / rms
             # filtr preemfazy
-            # audio = filt.preemfaza(audio, 0.95)'''
+            # audio = filt.preemfaza(audio, 0.95)
 
             # extract mfcc features
             mfcc_feats = mfcc(audio, Fs)
@@ -205,8 +206,6 @@ if __name__ == '__main__':
         temp_out= vad.ekstrakcja(g_longsignal, g_longsign, high_state)
         if (len(temp_out) > 4000):
             output = vad.obcinanie_brzegow(temp_out, rmstla)
-            m = np.max(np.abs(output))
-            output = (output / m)
             g_longsign *= 0
 
         # print((len(output)/8000))
@@ -235,6 +234,8 @@ if __name__ == '__main__':
 
         print("\nCzas rozpoznawania slowa: %s sek" % (time.time() - g_time))
         g_time = time.time()
+
+        drv.execute(output_label)
 
         # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)

@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/venv/lib/python3.7/drv8835-motor-driver-rpi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/venv/lib/python3.7/site-packages/drv8835-motor-driver-rpi" vcs="Git" />
   </component>
 </project>
