@@ -81,10 +81,10 @@ if __name__ == '__main__':
         high_state = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony thres
-        vec_sign = vad.wstepne_zazn(pow_vec, thres, high_state)
+        vec_sign = vad.presign(pow_vec, thres, high_state)
 
         # petla wyciecia impulsow krotszych niz 200 ms ktore nie sasiaduja z zadnym innym sygnalem
-        vec_sign = vad.usun_krotkie(vec_sign, high_state, Fs)
+        vec_sign = vad.rem_short(vec_sign, high_state, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi
         global g_longsignal
@@ -110,19 +110,19 @@ if __name__ == '__main__':
 
         print("RMS tla to ", rmstla)
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        g_longsign = vad.warunkowe_zazn(g_longsign, g_longpower, Fs, high_state,thres, 8000, len(g_longsign)-8000)
+        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
-        g_longsign = vad.dodatkowe_zazn(g_longsign, Fs, high_state, 8000,  len(g_longsign)-8000)
+        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
-        temp_out = vad.ekstrakcja(g_longsignal, g_longsign, high_state)
+        temp_out = vad.extraction(g_longsignal, g_longsign, high_state)
         if (len(temp_out)>4000):
             output = temp_out
 
             if 0 != any(output):
-                output = vad.obcinanie_brzegow(output, rmstla)
+                output = vad.cut_edges(output, rmstla)
 
         ''' mfcc_feat = mfcc((wyjscie), Fs)
         # fbank_feat = logfbank(audio1,sampling_freq)

@@ -85,10 +85,10 @@ if __name__ == '__main__':
         high_state = 10
 
         # wyroznienie fragmentow sygnalu ktorych moc widmowa przekracza wyznaczony prog
-        vec_sign = vad.wstepne_zazn(vec_pow, thres, high_state)
+        vec_sign = vad.presign(vec_pow, thres, high_state)
 
         # petla wyciecia impulsow krotszych niz 100 ms ktore nie sasiaduja z zadnym innym sygnalem
-        vec_sign = vad.usun_krotkie(vec_sign, high_state, Fs)
+        vec_sign = vad.rem_short(vec_sign, high_state, Fs)
 
         # sklejanie sygnalow kilkusekundowe przebiegi
         global g_longsignal
@@ -114,10 +114,10 @@ if __name__ == '__main__':
         print("Wart skut tla: ", rmstla)
 
         # funkcja zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        g_longsign = vad.warunkowe_zazn(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
 
         # funkcja zaznaczenia 200 ms aktywnosci przed i po sygnale
-        g_longsign = vad.dodatkowe_zazn(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
 
         # os czasu
         x_values = np.arange(0, len(g_longsignal), 1) / float(Fs)
