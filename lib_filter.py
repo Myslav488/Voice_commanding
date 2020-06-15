@@ -34,25 +34,25 @@ def normalization(audio, x):
     audio /= x
     return audio
 
-def ded_mean(audio, ramka):
-    wart_sr = 0
-    for cnt in range(0, int(len(audio)/ramka)):
-        wart_sr = wart_sr + (np.mean(audio[cnt*ramka:(cnt+1)*ramka]))/ramka
-    return audio-wart_sr
+def ded_mean(audio, frame):
+    val_mean = 0
+    for cnt in range(0, int(len(audio) / frame)):
+        val_mean = val_mean + (np.mean(audio[cnt * frame:(cnt + 1) * frame])) / frame
+    return audio-val_mean
 
-def filter_spectrcut(audio, Fs, ramka = 20, Thr = 0.1):
-    ramka = ramka *1000 / int(Fs)
+def filter_spectrcut(audio, Fs, frame = 20, Thr = 0.1):
+    frame = frame * 1000 / int(Fs)
 
     audiofft = [0] * int(Fs)
     for cnt1 in np.arange(int(len(audio)/len(audiofft))):
-        audiofft = fft.fft(audio[int(cnt1*ramka):int((cnt1+1)*ramka)])
+        audiofft = fft.fft(audio[int(cnt1 * frame):int((cnt1 + 1) * frame)])
         audiofft = (2 / Fs) * np.abs(audiofft[:int(Fs) // 2])
 
         for cnt2 in np.arange(len(audiofft)):
             if audiofft[cnt2] < Thr:
                 audiofft[cnt2] = 0
 
-        audio[int(cnt1*ramka):int((cnt1+1)*ramka)] = fft.ifft(audiofft)
+        audio[int(cnt1 * frame):int((cnt1 + 1) * frame)] = fft.ifft(audiofft)
 
     return audio
 
@@ -127,7 +127,7 @@ def _db_to_amp(x,):
     return librosa.core.db_to_amplitude(x, ref=1.0)
 
 def removeNoise(audio_clip,noise_clip,n_grad_freq=2,n_grad_time=4,n_fft=2048,
-                win_length=2048,hop_length=512,n_std_thresh=1.5,prop_decrease=1.0,):
+                win_length=2048,hop_length=512,n_std_thresh=1.5,prop_decrease=0.2,):
 
     # STFT over noise
     noise_stft = _stft(noise_clip, n_fft, hop_length, win_length)

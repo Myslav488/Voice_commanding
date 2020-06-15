@@ -1,3 +1,5 @@
+''' # This script allows to supervise parameters of signal and used statistics.'''
+
 from matplotlib.animation import FuncAnimation
 import scipy.io.wavfile as wavfile
 import matplotlib.pyplot as plt
@@ -6,6 +8,7 @@ import lib_vad as vad
 import numpy as np
 import subprocess
 import os
+from datetime import datetime
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
 g_longsignal = [0] * 24000
@@ -36,6 +39,9 @@ if __name__ == '__main__':
         # wczytywanie pliku z nagraniem
         if os.path.exists('record.wav'):
             Fs, audio = wavfile.read('record.wav', mmap=False)
+            now = datetime.now()
+            dt_string = now.strftime("%d%m%Y_%H%M%S")
+            print(dt_string)
         else:
             Fs = 48000
             audio = [0]*Fs
@@ -74,7 +80,7 @@ if __name__ == '__main__':
         # audio = filt.filtr_odcinaniezwidma(audio, Fs)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        thres = rms/(30*10**5)
+        thres = 10 # rms/(3*10**6)
         print("Prog to: ", thres)
 
         # wektor mocy sygnalu
@@ -118,10 +124,29 @@ if __name__ == '__main__':
 
         # funkcja zaznaczenia 200 ms aktywnosci przed i po sygnale
         g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.extrab_sign(g_longsign, g_longpower,  thres/2, Fs, high_state, 8000, len(g_longsign) - 8000)
+
+        # ekstrakcja wykrytego sygnalu mowy
+        global output
+        temp_out = vad.extraction(g_longsignal, g_longsign, high_state)
+        if (len(temp_out) > 3000):
+            output = temp_out
+
+            if 0 != any(output):
+                # output = vad.cut_edges(output, rmstla)
+                m = np.max(np.abs(output))
+                output = (output / m)
+                g_longsign[:16000] *= 0
+
+                now = datetime.now()
+                dt_string = now.strftime("%d%m%Y_%H%M%S")
+                print(dt_string)
+                file = "OLDOnes/recs/" + dt_string + ".wav"
+                wavfile.write(file, int(Fs), output)
 
         # os czasu
         x_values = np.arange(0, len(g_longsignal), 1) / float(Fs)
-        yrmsv = np.ones((len(g_longsignal),)) * rmstla
+        yrmsv = np.ones((len(g_longsignal),)) * thres # rmstla
         # przeskalowanie osi do sekund
         x_values *= 1000
 

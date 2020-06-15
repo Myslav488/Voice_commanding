@@ -4,7 +4,7 @@ import scipy.io.wavfile as wavfile
 from lib_mfcc import mfcc, logfbank
 import lib_filter as filt
 import lib_vad as vad
-import lib_drv as drv
+# import lib_drv as drv
 from hmmlearn import hmm
 import numpy as np
 import subprocess
@@ -235,7 +235,9 @@ if __name__ == '__main__':
         print("\nCzas rozpoznawania slowa: %s sek" % (time.time() - g_time))
         g_time = time.time()
 
-        drv.execute(output_label)
+        proc = subprocess.Popen(['sudo', 'python3', 'lib_drv.py', output_label], shell=False)
+
+        # drv.execute(output_label)
 
         # aktywacja animacji wyswietlenia sygnalu
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)

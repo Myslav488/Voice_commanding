@@ -43,7 +43,7 @@ if __name__ == '__main__':
     start_time = time.time()
     # args = build_arg_parser().parse_args()
     # input_folder = args.input_folder
-    input_folder = 'Baza2/'
+    input_folder = 'Baza3/'
 
     hmm_models = []
 
@@ -86,17 +86,17 @@ if __name__ == '__main__':
 
     # test files
     input_files = [
-        'Baza/STOP/008.wav',
-        'Baza/W_PRAWO/008.wav',
-        'Baza/SZYBCIEJ/008.wav',
-        'Baza/WOLNIEJ/008.wav',
-        'Baza/W_LEWO/008.wav',
-        'Baza/LEKKO/008.wav',
-        'Baza/WOZEK/008.wav',
-        'Baza/WYLACZ_SIE/008.wav',
-        'Baza/WLACZ_SIE/008.wav',
-        'Baza/DO_PRZODU/008.wav',
-        'Baza/DO_TYLU/008.wav',
+        'Baza3/STOP/008.wav',
+        'Baza3/W_PRAWO/008.wav',
+        'Baza3/SZYBCIEJ/008.wav',
+        'Baza3/WOLNIEJ/008.wav',
+        'Baza3/W_LEWO/008.wav',
+        'Baza3/LEKKO/008.wav',
+        'Baza3/WOZEK/008.wav',
+        'Baza3/WYLACZ_SIE/008.wav',
+        'Baza3/WLACZ_SIE/008.wav',
+        'Baza3/DO_PRZODU/008.wav',
+        'Baza3/DO_TYLU/008.wav',
 
     ]
 

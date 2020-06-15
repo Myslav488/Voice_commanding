@@ -10,6 +10,7 @@ import subprocess
 import warnings
 import time
 import os
+from datetime import datetime
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
 g_longsignal = [0] * 24000
@@ -28,7 +29,7 @@ noise = np.transpose(np.array([float((i)) for i in noise]))
 
 # definiowanie klasy HMM
 class HMMtrainer(object):
-    def __init__(self, model_name='GaussianHMM', n_components=10, cov_type='spherical', n_iter=1000):
+    def __init__(self, model_name='GaussianHMM', n_components=15, cov_type='diag', n_iter=2000):
         self.model_name = model_name
         self.n_components = n_components
         self.cov_type = cov_type
@@ -58,6 +59,7 @@ if __name__ == '__main__':
 
     hmm_models = []
 
+    # budowanie modelu klasyfikatora HMM
     for dirname in os.listdir(input_folder):
         subfolder = os.path.join(input_folder, dirname)
 
@@ -89,9 +91,11 @@ if __name__ == '__main__':
             # print("RMS uczonych probek ",rms)
             audio = audio / rms
             # filtr preemfazy
-            # audio = filt.preemfaza(audio, 0.95)'''
+            # audio = filt.preemfaza(audio, 0.95)
 
             # extract mfcc features
+            m = np.max(np.abs(audio))
+            audio = (audio / m)'''
             mfcc_feats = mfcc(audio, Fs)
 
             if len(X) == 0:
@@ -155,7 +159,7 @@ if __name__ == '__main__':
         # audio = filt.preemfaza(audio, 0.95)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        thres = rms/(3.0*10**6)
+        thres = 10 # rms/(4*10**6)
         # print("RMS to: ", rms, "PRoG ", thres)
 
         # wektor mocy sygnalu
@@ -195,19 +199,28 @@ if __name__ == '__main__':
 
         # print("RMS tla to ", rmstla)
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres/2, 8000, len(g_longsign) - 8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
         g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.extrab_sign(g_longsign, g_longpower, thres/2, Fs, high_state, 8000, len(g_longsign) - 8000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
         temp_out= vad.extraction(g_longsignal, g_longsign, high_state)
-        if (len(temp_out) > 4000):
-            output = vad.cut_edges(temp_out, rmstla)
-            m = np.max(np.abs(output))
-            output = (output / m)
-            g_longsign *= 0
+        if (len(temp_out) > 3000):
+            output = temp_out # vad.cut_edges(temp_out, rmstla)
+
+            if 0 != any(output):
+                # output = vad.cut_edges(output, rmstla)
+                m = np.max(np.abs(output))
+                output = (output / m)
+                g_longsign[:16000] *= 0
+
+            now = datetime.now()
+            dt_string = now.strftime("%d%m%Y_%H%M%S")
+            file = "OLDOnes/recs/" + dt_string + ".wav"
+            wavfile.write(file, int(Fs), output)
 
         # print((len(output)/8000))
         mfcc_feat = mfcc((output), Fs)
@@ -228,7 +241,7 @@ if __name__ == '__main__':
             if score > max_score:
                 max_score = score
                 output_label = label
-            # print(label, score)
+            print(label, score)
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
         global g_time

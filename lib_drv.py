@@ -1,5 +1,6 @@
 from pololu_drv8835_rpi import motors, MAX_SPEED
 import time
+import sys
 
 # Set up sequences of motor speeds.
 test_forward_speeds = list(range(0, MAX_SPEED, 1)) + \
@@ -15,6 +16,7 @@ def forward():
         for s in test_forward_speeds:
             motors.setSpeeds(s, s)
             time.sleep(0.005)
+        print("Let's go forward")
 
     finally:
         # Stop the motors, even if there is an exception
@@ -28,6 +30,7 @@ def backward():
         for s in test_reverse_speeds:
             motors.setSpeeds(s, s)
             time.sleep(0.005)
+        print("Let's go backward")
 
     finally:
         # Stop the motors, even if there is an exception
@@ -37,6 +40,7 @@ def backward():
 def stop():
     try:
         motors.setSpeeds(0, 0)
+        print("Stooop")
 
     finally:
         # Stop the motors, even if there is an exception
@@ -46,9 +50,9 @@ def stop():
 def left():
     try:
         motors.setSpeeds(0, 0)
-
+        print("Let's go left")
         for s in test_forward_speeds:
-            motors.setSpeeds(s, 0.25*s)
+            motors.setSpeeds(s, int(0.25*s))
             time.sleep(0.005)
 
     finally:
@@ -59,9 +63,10 @@ def left():
 def right():
     try:
         motors.setSpeeds(0, 0)
+        print("Let's go right")
 
         for s in test_forward_speeds:
-            motors.setSpeeds(0.25*s, s)
+            motors.setSpeeds(int(0.25*s), s)
             time.sleep(0.005)
 
     finally:
@@ -73,60 +78,19 @@ def past():
     pass
 
 def execute(x):
-    return {
-        'DO_PRZODU': forward(),
-        'DO_TYŁU': backward(),
-        'W_LEWO': left(),
-        'W_PRAWO': right(),
-        'STOP': stop(),
-        'else': past(),
-    }.get(x, 'else')
+    if x == 'DO_PRZODU':
+        return forward()
+    elif x == 'DO_TYLU':
+        return backward()
+    elif x == 'W_LEWO':
+        return left()
+    elif x == 'W_PRAWO':
+        return right()
+    elif x == 'STOP':
+        return stop()
+    else:
+        return past()
 
-'''def forward():
-
-    motors.setSpeeds(0, 0)
-    for s in test_forward_speeds:
-        motors.setSpeeds(s, s)
-        time.sleep(0.005)
-
-    motors.setSpeeds(0, 0)
-
-def backward():
-    motors.setSpeeds(0, 0)
-    for s in test_reverse_speeds:
-        motors.setSpeeds(s, s)
-        time.sleep(0.005)
-
-    motors.setSpeeds(0, 0)
-
-def stop():
-    motors.setSpeeds(0, 0)
-
-def left():
-    motors.setSpeeds(0, 0)
-    for s in test_forward_speeds:
-        motors.setSpeeds(s, 0.25*s)
-        time.sleep(0.005)
-
-    motors.setSpeeds(0, 0)
-
-def right():
-    motors.setSpeeds(0, 0)
-    for s in test_forward_speeds:
-        motors.setSpeeds(0.25*s, s)
-        time.sleep(0.005)
-    motors.setSpeeds(0, 0)
-
-def past():
-    print("Inne nic ")
-    pass
-
-def execute(x):
-    return {
-        'DO_PRZODU': forward(),
-        'DO_TYŁU': backward(),
-        'W_LEWO': left(),
-        'W_PRAWO': right(),
-        'STOP': stop(),
-        'else': past(),
-    }.get(x, 'else')'''
+if __name__ == '__main__':
+    label = (sys.argv[1])
+    execute(label)

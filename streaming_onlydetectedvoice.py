@@ -18,6 +18,10 @@ output = np.zeros((100,))
 g_rms = 0
 rmstla = 0
 
+noise = wavfile.read('szum.wav')
+noise = noise[::6]
+noise = np.transpose(np.array([float((i)) for i in noise]))
+
 if __name__ == '__main__':
 
     if os.path.exists('record.wav'):
@@ -46,6 +50,8 @@ if __name__ == '__main__':
 
         # decymacja
         Fs, audio = filt.decimation(audio, Fs, 6)
+        audio = np.transpose(np.array([float((i)) for i in audio]))
+        audio = filt.removeNoise(audio, noise)
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -69,7 +75,7 @@ if __name__ == '__main__':
         audio = filt.preemphasis(audio, 0.95)
 
         # thres mocy calego sygnalu (wyznaczany empirycznie)
-        thres = rms/(25*10**5)
+        thres = rms/(4*10**6)
         print("RMS to: ", rms)
         print("PRoG ", thres)
 
@@ -120,6 +126,7 @@ if __name__ == '__main__':
         temp_out = vad.extraction(g_longsignal, g_longsign, high_state)
         if (len(temp_out)>4000):
             output = temp_out
+            g_longsign *= 0
 
             if 0 != any(output):
                 output = vad.cut_edges(output, rmstla)
