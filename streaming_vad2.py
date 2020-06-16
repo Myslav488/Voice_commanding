@@ -11,9 +11,9 @@ import os
 from datetime import datetime
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
-g_longsignal = [0] * 24000
-g_longsign = [0] * 24000
-g_longpower = [0] * 24000
+g_longsignal = [0] * 40000
+g_longsign = [0] * 40000
+g_longpower = [0] * 40000
 
 # globalna wartosc rms do normalizacji
 g_rms = 0
@@ -31,14 +31,19 @@ if __name__ == '__main__':
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
-        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
+        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '2', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
                      '-V', 'mono', '-v', 'record.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
         print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
 
         # wczytywanie pliku z nagraniem
         if os.path.exists('record.wav'):
-            Fs, audio = wavfile.read('record.wav', mmap=False)
+            try:
+                Fs, audio = wavfile.read('record.wav', mmap=False)
+            except:
+                Fs = 48000
+                audio = [0] * Fs
+
             now = datetime.now()
             dt_string = now.strftime("%d%m%Y_%H%M%S")
             print(dt_string)
@@ -56,6 +61,7 @@ if __name__ == '__main__':
         Fs, audio = filt.decimation(audio, Fs, 6)
         audio = np.transpose(np.array([float((i)) for i in audio]))
         audio = filt.removeNoise(audio, noise)
+        audio = filt.preemphasis(audio, 0.95)
 
         # dlugosc okna w ms * 1000 / Fs
         winlen = 10 * 8
@@ -120,11 +126,11 @@ if __name__ == '__main__':
         print("Wart skut tla: ", rmstla)
 
         # funkcja zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 16000)
 
         # funkcja zaznaczenia 200 ms aktywnosci przed i po sygnale
-        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
-        g_longsign = vad.extrab_sign(g_longsign, g_longpower,  thres/2, Fs, high_state, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 16000)
+        g_longsign = vad.extrab_sign(g_longsign, g_longpower,  thres/2, Fs, high_state, 8000, len(g_longsign) - 16000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
@@ -133,10 +139,10 @@ if __name__ == '__main__':
             output = temp_out
 
             if 0 != any(output):
-                # output = vad.cut_edges(output, rmstla)
+                output = vad.cut_edges(output, thres/2)
                 m = np.max(np.abs(output))
                 output = (output / m)
-                g_longsign[:16000] *= 0
+                g_longsign[:32000] *= 0
 
                 now = datetime.now()
                 dt_string = now.strftime("%d%m%Y_%H%M%S")

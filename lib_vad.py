@@ -71,15 +71,15 @@ def extra_sign(vec_sign, Fs, state_high=1, begin=0, end=-1):
     # wsp. przeliczenia podanego czasu w ms na ilosc probek
     coef = int(Fs/1000)
     # ile ms sygnalu zaznczayc(w ms)
-    leng = 100
+    leng = 200 * coef
     cnt = begin
     while cnt < end:
-        if state_high == vec_sign[cnt] and state_high != vec_sign[cnt - 1] and cnt > leng * coef:
-            vec_sign[cnt - leng * coef:cnt] = state_high
+        if state_high == vec_sign[cnt] and state_high != vec_sign[cnt - 1] and cnt > leng:
+            vec_sign[cnt - leng:cnt] = state_high
         elif state_high == vec_sign[cnt - 1] and state_high != vec_sign[cnt] and len(
-                vec_sign) - cnt > leng * coef:
-            vec_sign[cnt:cnt + leng * coef] = state_high
-            cnt += leng * coef + 2
+                vec_sign) - cnt > leng:
+            vec_sign[cnt:cnt + leng] = state_high
+            cnt += leng + 2
         cnt += 1
     return vec_sign
 
@@ -142,17 +142,17 @@ def extraction(signal, vec_sign, state_high):
     cnt1 = 0
     # licznik iterujacy tablice wynikow
     cnt2 = 0
-    while cnt1 < (len(signal) - 8000):
+    while cnt1 < (len(signal) - 16000):
         # wykryj poczatek zaznaczenia
-        if state_high == vec_sign[cnt1] and state_high != vec_sign[cnt1 - 1] and cnt1 < 8000:
+        if state_high == vec_sign[cnt1] and state_high != vec_sign[cnt1 - 1] and cnt1 < 16000:
             result[cnt2, 0] = cnt1
             result[cnt2, 1] += 1
             cnt1 += 1
-        elif state_high == vec_sign[cnt1] and state_high == vec_sign[cnt1 - 1] and 4000 < cnt1 < 16000 and result[cnt2, 0] != 0:
+        elif state_high == vec_sign[cnt1] and state_high == vec_sign[cnt1 - 1] and 12000 < cnt1 < 32000 and result[cnt2, 0] != 0:
             # oblicz dlugosc zaznaczenia
             result[cnt2, 1] += 1
             cnt1 += 1
-        elif (state_high != vec_sign[cnt1] and state_high == vec_sign[cnt1 - 1]) or (state_high == vec_sign[cnt1] and cnt1 == 16000-1):
+        elif (state_high != vec_sign[cnt1] and state_high == vec_sign[cnt1 - 1]) or (state_high == vec_sign[cnt1] and cnt1 == 32000-1):
             #wykryj koniec zaznaczenia i inkrementacja licznika 2
             cnt2 += 1
             cnt1 += 1
