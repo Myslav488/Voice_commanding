@@ -19,7 +19,7 @@ g_longsign = [0] * 40000
 g_longpower = [0] * 40000
 output = np.zeros((1, 100))
 g_time = time.time()
-
+ster_time = time.time()
 # globalna wartosc rms do normalizacji
 g_rms = 0
 rmstla = 0
@@ -30,7 +30,7 @@ noise = np.transpose(np.array([float((i)) for i in noise]))
 
 # definiowanie klasy HMM
 class HMMtrainer(object):
-    def __init__(self, model_name='GaussianHMM', n_components=15, cov_type='diag', n_iter=1000):
+    def __init__(self, model_name='GaussianHMM', n_components=15, cov_type='diag', n_iter=200):
         self.model_name = model_name
         self.n_components = n_components
         self.cov_type = cov_type
@@ -116,16 +116,19 @@ if __name__ == '__main__':
             hmm_models.append((hmm_trainer, label))
             hmm_trainer = None
         pickle.dump(hmm_models, open('model_HMM.pkl', "wb"))
-        print("Utworzono model HMM")
+        print("Utworzono model HMM. Czas: ",   ster_time - time.time())
+        ster_time = time.time()
 
     # wyswietlanie ciglego sygnalu za pomoca aniamcji
     def animate(i):
         # nagrywanie 1000 ms sygnalu do pliku
-        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '2', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
+        proc_args = ['arecord', '-D', 'plughw:1,0', '-d', '1', '-c1', '-M', '-r', '48000', '-f', 'S32_LE', '-t', 'wav',
                      '-V', 'mono', '-v', 'record.wav']
         rec_proc = subprocess.Popen(proc_args, shell=False, preexec_fn=os.setsid)
         # print("startRecordingArecord()> rec_proc pid= " + str(rec_proc.pid))
-
+        global ster_time
+        print("Cos tam: ", time.time() - ster_time)
+        ster_time = time.time()
         # wczytywanie pliku z nagraniem
         if os.path.exists('record.wav'):
             try:
@@ -168,7 +171,8 @@ if __name__ == '__main__':
             audio = audio / g_rms
         # filtr preemfazy
         # audio = filt.preemfaza(audio, 0.95)
-
+        print("Wstepne przetwarzanie: ", time.time() - ster_time)
+        ster_time = time.time()
         # prog mocy calego sygnalu (wyznaczany empirycznie)
         thres = 10 # rms/(4*10**6)
         # print("RMS to: ", rms, "PRoG ", thres)
@@ -214,12 +218,13 @@ if __name__ == '__main__':
         g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 16000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
-        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 16000)
-        g_longsign = vad.extrab_sign(g_longsign, g_longpower, thres/2, Fs, high_state, 8000, len(g_longsign) - 16000)
+        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 16000, len(g_longsign) - 16000)
+        g_longsign = vad.extra2_sign(g_longsign, g_longpower, thres / 2, Fs, high_state, 16000, len(g_longsign) - 16000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
         temp_out= vad.extraction(g_longsignal, g_longsign, high_state)
+
         # jesli wyekrahowana probka jest dluzsza niz 375 ms nadpisz ja jako wykryta komende
         if (len(temp_out) > 3000):
             output = temp_out # vad.cut_edges(temp_out, rmstla)
@@ -234,7 +239,8 @@ if __name__ == '__main__':
             dt_string = now.strftime("%d%m%Y_%H%M%S")
             file = "OLDOnes/recs/" + dt_string + ".wav"
             wavfile.write(file, int(Fs), output)
-
+        print("Ekstrakcja: ", time.time() - ster_time)
+        ster_time = time.time()
         # print((len(output)/8000))
         mfcc_feat = mfcc((output), Fs)
         # mfcc_feat = mfcc_feat.T
@@ -258,7 +264,8 @@ if __name__ == '__main__':
         print("Predicted: ", output_label)
         warnings.filterwarnings("ignore")
         global g_time
-
+        print("Samo rozpoznawanie: ", time.time() - ster_time)
+        ster_time = time.time()
         print("\nCzas rozpoznawania slowa: %s sek" % (time.time() - g_time))
         g_time = time.time()
 

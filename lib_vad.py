@@ -83,7 +83,7 @@ def extra_sign(vec_sign, Fs, state_high=1, begin=0, end=-1):
         cnt += 1
     return vec_sign
 
-def extrab_sign(vec_sign, vec_pow, thres, Fs, state_high=1, begin=0, end=-1):
+def extra2_sign(vec_sign, vec_pow, thres, Fs, state_high=1, begin=0, end=-1):
     assert len(vec_pow) == len(vec_sign), "Vectors should be the same length."
 
     # wsp. przeliczenia podanego czasu w ms na ilosc probek

@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
         # funkcja zaznaczenia 200 ms aktywnosci przed i po sygnale
         g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 16000)
-        g_longsign = vad.extrab_sign(g_longsign, g_longpower,  thres/2, Fs, high_state, 8000, len(g_longsign) - 16000)
+        g_longsign = vad.extra2_sign(g_longsign, g_longpower, thres / 2, Fs, high_state, 8000, len(g_longsign) - 16000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
