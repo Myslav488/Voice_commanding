@@ -14,9 +14,9 @@ from datetime import datetime
 import pickle
 
 # globalne tablice do wyswietlania zlaczonych sygnalow
-g_longsignal = [0] * 40000
-g_longsign = [0] * 40000
-g_longpower = [0] * 40000
+g_longsignal = [0] * 24000
+g_longsign = [0] * 24000
+g_longpower = [0] * 24000
 output = np.zeros((1, 100))
 g_time = time.time()
 ster_time = time.time()
@@ -215,11 +215,11 @@ if __name__ == '__main__':
 
         # print("RMS tla to ", rmstla)
         # petla zaznaczenia 300 ms aktywnosci przed i po sygnale, jesli moc sygnalu przekracza polowe progu
-        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 16000)
+        g_longsign = vad.cond_sign(g_longsign, g_longpower, Fs, high_state, thres, 8000, len(g_longsign) - 8000)
 
         # petla zaznaczenia 200 ms aktywnosci przed i po sygnale
-        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 16000, len(g_longsign) - 16000)
-        g_longsign = vad.extra2_sign(g_longsign, g_longpower, thres / 2, Fs, high_state, 16000, len(g_longsign) - 16000)
+        g_longsign = vad.extra_sign(g_longsign, Fs, high_state, 8000, len(g_longsign) - 8000)
+        g_longsign = vad.extra2_sign(g_longsign, g_longpower, thres / 2, Fs, high_state, 8000, len(g_longsign) - 8000)
 
         # ekstrakcja wykrytego sygnalu mowy
         global output
