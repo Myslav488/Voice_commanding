@@ -86,7 +86,7 @@ if __name__ == '__main__':
         # audio = filt.filtr_odcinaniezwidma(audio, Fs)
 
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        thres = 10 # rms/(3*10**6)
+        thres = rms/(3*10**6)
         print("Prog to: ", thres)
 
         # wektor mocy sygnalu
@@ -144,11 +144,11 @@ if __name__ == '__main__':
                 output = (output / m)
                 g_longsign[:16000] *= 0
 
-                now = datetime.now()
+                '''now = datetime.now()
                 dt_string = now.strftime("%d%m%Y_%H%M%S")
                 print(dt_string)
                 file = "OLDOnes/recs/" + dt_string + ".wav"
-                wavfile.write(file, int(Fs), output)
+                wavfile.write(file, int(Fs), output)'''
 
         # os czasu
         x_values = np.arange(0, len(g_longsignal), 1) / float(Fs)

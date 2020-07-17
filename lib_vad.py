@@ -161,7 +161,7 @@ def extraction(signal, vec_sign, state_high):
 
     # wybr najdluzszego odcinka czasowego z tablicy wycinkow
     z = np.argmax(result[:,1])
-    print("UWAGA PATRZEC", result[z, :])
+    # print("UWAGA", result[z, :])
     # wytnij z sygnalu fragment od wyznaczonego indeksu
     return signal[int(result[z, 0]):int(result[z, 0]) + int(result[z, 1])]
 

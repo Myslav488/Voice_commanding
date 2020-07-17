@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     hmm_models = []
 
-    if os.path.exists('model_HMM.pkl') and 0:
+    if os.path.exists('model_HMM.pkl'):
         hmm_models = pickle.load(open('model_HMM.pkl', "rb"))
     else:
         # budowanie modelu klasyfikatora HMM
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         print("Wstepne przetwarzanie: ", time.time() - ster_time)
         ster_time = time.time()
         # prog mocy calego sygnalu (wyznaczany empirycznie)
-        thres = 10 # rms/(4*10**6)
+        thres = rms/(4*10**6)
         # print("RMS to: ", rms, "PRoG ", thres)
 
         # wektor mocy sygnalu
@@ -233,12 +233,12 @@ if __name__ == '__main__':
                 output = vad.cut_edges(output, rmstla)
                 m = np.max(np.abs(output))
                 output = (output / m)
-                g_longsign[:32000] *= 0
+                g_longsign[:16000] *= 0
 
-            now = datetime.now()
+            '''now = datetime.now()
             dt_string = now.strftime("%d%m%Y_%H%M%S")
             file = "OLDOnes/recs/" + dt_string + ".wav"
-            wavfile.write(file, int(Fs), output)
+            wavfile.write(file, int(Fs), output)'''
         print("Ekstrakcja: ", time.time() - ster_time)
         ster_time = time.time()
         # print((len(output)/8000))
